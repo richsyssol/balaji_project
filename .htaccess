@@ -1,0 +1,29 @@
+RewriteEngine On
+
+# <RequireAll>
+ 
+#     Require ip 223.233.82.152  # Replace with your actual IP
+# </RequireAll>
+
+# <Limit GET POST>
+#     order deny,allow
+#     deny from all
+#     allow from 223.233.82.152
+# </Limit>
+
+
+# To remove .php extension from URLs
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+<Files "config.php">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+
+<Files "db_conn.php">
+    Order Deny,Allow
+    Deny from all
+</Files>
