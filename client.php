@@ -850,6 +850,10 @@ if ($result->num_rows > 0) {
                             <i class="fa-solid fa-trash"></i>
                         </a>
 
+                        <a href="bill-creation.php?id=<?php echo $row['id']; ?>" class="btn sub-btn1 text-dark" >
+                            Bill
+                        </a>
+
                     <?php endif; ?>
                 </td>
 

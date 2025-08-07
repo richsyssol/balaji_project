@@ -870,172 +870,10 @@ ob_start();  // Start output buffering
         
          
         
-     <div id="reportSection">   
-
-       <?php if (!empty($groupedData)): ?>
-        <?php foreach ($groupedData as $bmds_type => $entries): ?>
-
-        <div class="text-center">
-            <?php
-                $formatted_start_date = (!empty($start_date) && strtotime($start_date)) ? date("d/m/Y", strtotime($start_date)) : "00/00/0000";
-                $formatted_end_date = (!empty($end_date) && strtotime($end_date)) ? date("d/m/Y", strtotime($end_date)) : "00";
-            ?>
-            <h1 class="mt-4">
-                <?= htmlspecialchars($bmds_type) ?> Report from <?= htmlspecialchars($formatted_start_date) ?> To <?= htmlspecialchars($formatted_end_date) ?>
-            </h1>
-        </div>
-
-        <form method="POST" id="bulkDeleteForm">
-    <div class="float-end pb-3">
-        <button type="button" class="btn sub-btn1 mt-4 bg-danger text-light" data-bs-toggle="modal" data-bs-target="#passwordModalSelected">
-            Delete Selected
-        </button>
-    </div>
-
-
-        <table class="table table-bordered my-5">
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="selectAll"></th>
-                    <th scope="col">#</th>
-                    <th scope="col" class="action-col">Client ID</th>
-                    <th scope="col">Sr No.</th>
-                    <th scope="col" class="action-col">Date</th>
-                    <th scope="col">Client Name</th>
-                    <th scope="col">Birth Date</th>
-                    <!-- <th scope="col">Type</th> -->
-                    <th scope="col">Sub Type</th>
-                    <th scope="col">No Of Class</th>
-                    <th scope="col">Class of vehicle</th>
-                    <th scope="col">Premium</th>
-                    <th scope="col">Recovery</th>
-                    <th scope="col">Excess</th>
-                    <th scope="col" class="action-col">Status</th>
-                    <th scope="col" class="action-col">Action</th>
-                    <th scope="col" class="summary-col">__Remark__</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                $serial_number = $offset + 1; // Initialize serial number
-                foreach ($entries as $row): ?>
-                    <tr>
-                        <td><input type="checkbox" name="selected_ids[]" value="<?= $row['id'] ?>"></td>
-                        <th scope="row"><?= $serial_number++; ?></th>
-                        <td class="action-col"> <?php echo htmlspecialchars($row['client_id']); ?></td>
-                        <td><?= htmlspecialchars($row['sr_num']); ?></td>
-                        <td class="action-col"><?= date('d-m-Y', strtotime($row['policy_date'])); ?></td>
-                        <td><?= htmlspecialchars($row['client_name']); ?></td>
-                        <td>
-                            <?php
-                                if (!empty($row['birth_date']) && $row['birth_date'] !== '0000-00-00') {
-                                echo date("d-m-Y", strtotime($row['birth_date'])) . "<br>";
-                            }
-                            ?>
-                        </td>
-                        <!-- <td>
-                            <?= htmlspecialchars($row['bmds_type']); ?> <br>
-                            
-                        </td> -->
-                        <td>
-                            <?= htmlspecialchars($row['llr_type']); ?>
-                            <?= htmlspecialchars($row['mdl_type']); ?><br>
-                        </td>
-                         <td>
-                            <?= htmlspecialchars($row['class']); ?> <br>
-                            
-                        </td>
-                        <!-- <td>
-
-                            <?php
-                            // Show test date if it's not empty and not '0000-00-00'
-                            if (!empty($row['test_date']) && $row['test_date'] !== '0000-00-00') {
-                                echo date("d-m-Y", strtotime($row['test_date'])) . "<br>";
-                            }
-
-                            // Show start and end date range if both are valid
-                            if (!empty($row['start_date']) && $row['start_date'] !== '0000-00-00' &&
-                                !empty($row['end_date']) && $row['end_date'] !== '0000-00-00') {
-                                echo date("d-m-Y", strtotime($row['start_date'])) . " To " . date("d-m-Y", strtotime($row['end_date'])) . "<br>";
-                            }
-
-                            // Show start and end time if both are valid
-                            if (!empty($row['start_time']) && $row['start_time'] !== '00:00:00' &&
-                                !empty($row['end_time']) && $row['end_time'] !== '00:00:00') {
-                                echo date("g:i A", strtotime($row['start_time'])) . " To " . date("g:i A", strtotime($row['end_time']));
-                            }
-                            ?>
-
-                            <?= htmlspecialchars($row['city']); ?>
-
-                        </td> -->
-
-                        <td>
-                            <?= htmlspecialchars($row['llr_class']); ?>
-                            <?= htmlspecialchars($row['car_type']); ?>
-                        </td>
-
-                        <td>
-                            <?= htmlspecialchars($row['amount']); ?><br>
-                        </td>
-
-                        <td><?= htmlspecialchars($row['recov_amount']); ?></td>
-                        <td><?= htmlspecialchars($row['bal_amount']); ?></td>
-                        <td class="summary-col"></td>
-
-                        <!-- <td>
-                            <?php
-                                if (!empty($row['start_date']) && $row['start_date'] !== '0000-00-00' && !empty($row['end_date']) && $row['end_date'] !== '0000-00-00') {
-                                    echo date("d-m-Y", strtotime($row['start_date'])) . " To " . date("d-m-Y", strtotime($row['end_date']));
-                                } else {
-                                    echo "-";
-                                }
-                            ?>
-                        </td>
-                        <td>
-                            <?php
-                                $start = $row['start_time'];
-                                $end = $row['end_time'];
-                                if (!empty($start) && !empty($end) && $start !== '00:00:00' && $end !== '00:00:00') {
-                                    echo date("g:i A", strtotime($start)) . " To " . date("g:i A", strtotime($end));
-                                } else {
-                                    echo "-";
-                                }
-                            ?>
-                        </td> -->
-
-                        <!-- <td><?= htmlspecialchars($row['contact']); ?></td> -->
-                         
-                        <td class="action-col"><?= htmlspecialchars($row['form_status']); ?></td>
-                        <td class="action-col">
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') : ?>
-                                <a href="bmds-form.php?action=edit&id=<?= $row['id']; ?>" class="text-decoration-none text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a> 
-                                
-                                &nbsp;/&nbsp;
-                                
-                                <a class="text-decoration-none text-dark" data-bs-toggle="modal" data-bs-target="#passwordModal" data-item-id="<?= $row['id']; ?>">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
-                            <?php endif; ?>
-                        </td>
-                        <td class="action-col">
-                            <a href="bmds-form.php?action=add_new&id=<?php echo $row['id']; ?>" class="btn sub-btn1 text-dark" >
-                                Upgrade
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-                            </form>
-    <?php endforeach; ?>
-<?php else: ?>
-    <p>No records found for today.</p>
-<?php endif; ?>
-       
-        <h1>Summary :</h1>
+     <div id="reportSection">  
+        
+     
+      <h1>Summary :</h1>
         
 
         <table class="table table-bordered my-5">
@@ -1251,6 +1089,172 @@ ob_start();  // Start output buffering
                 </tr>
             </tbody>
         </table>
+
+       <?php if (!empty($groupedData)): ?>
+        <?php foreach ($groupedData as $bmds_type => $entries): ?>
+
+        <div class="text-center">
+            <?php
+                $formatted_start_date = (!empty($start_date) && strtotime($start_date)) ? date("d/m/Y", strtotime($start_date)) : "00/00/0000";
+                $formatted_end_date = (!empty($end_date) && strtotime($end_date)) ? date("d/m/Y", strtotime($end_date)) : "00";
+            ?>
+            <h1 class="mt-4">
+                <?= htmlspecialchars($bmds_type) ?> Report from <?= htmlspecialchars($formatted_start_date) ?> To <?= htmlspecialchars($formatted_end_date) ?>
+            </h1>
+        </div>
+
+        <form method="POST" id="bulkDeleteForm">
+    <div class="float-end pb-3">
+        <button type="button" class="btn sub-btn1 mt-4 bg-danger text-light" data-bs-toggle="modal" data-bs-target="#passwordModalSelected">
+            Delete Selected
+        </button>
+    </div>
+
+    
+
+        <table class="table table-bordered my-5">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll"></th>
+                    <th scope="col">#</th>
+                    <th scope="col" class="action-col">Client ID</th>
+                    <th scope="col">Sr No.</th>
+                    <th scope="col" class="action-col">Date</th>
+                    <th scope="col">Client Name</th>
+                    <th scope="col">Birth Date</th>
+                    <!-- <th scope="col">Type</th> -->
+                    <th scope="col">Sub Type</th>
+                    <th scope="col">No Of Class</th>
+                    <th scope="col">Class of vehicle</th>
+                    <th scope="col">Premium</th>
+                    <th scope="col">Recovery</th>
+                    <th scope="col">Excess</th>
+                    <th scope="col" class="action-col">Status</th>
+                    <th scope="col" class="action-col">Action</th>
+                    <th scope="col" class="summary-col">__Remark__</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php 
+                $serial_number = $offset + 1; // Initialize serial number
+                foreach ($entries as $row): ?>
+                    <tr>
+                        <td><input type="checkbox" name="selected_ids[]" value="<?= $row['id'] ?>"></td>
+                        <th scope="row"><?= $serial_number++; ?></th>
+                        <td class="action-col"> <?php echo htmlspecialchars($row['client_id']); ?></td>
+                        <td><?= htmlspecialchars($row['sr_num']); ?></td>
+                        <td class="action-col"><?= date('d-m-Y', strtotime($row['policy_date'])); ?></td>
+                        <td><?= htmlspecialchars($row['client_name']); ?></td>
+                        <td>
+                            <?php
+                                if (!empty($row['birth_date']) && $row['birth_date'] !== '0000-00-00') {
+                                echo date("d-m-Y", strtotime($row['birth_date'])) . "<br>";
+                            }
+                            ?>
+                        </td>
+                        <!-- <td>
+                            <?= htmlspecialchars($row['bmds_type']); ?> <br>
+                            
+                        </td> -->
+                        <td>
+                            <?= htmlspecialchars($row['llr_type']); ?>
+                            <?= htmlspecialchars($row['mdl_type']); ?><br>
+                        </td>
+                         <td>
+                            <?= htmlspecialchars($row['class']); ?> <br>
+                            
+                        </td>
+                        <!-- <td>
+
+                            <?php
+                            // Show test date if it's not empty and not '0000-00-00'
+                            if (!empty($row['test_date']) && $row['test_date'] !== '0000-00-00') {
+                                echo date("d-m-Y", strtotime($row['test_date'])) . "<br>";
+                            }
+
+                            // Show start and end date range if both are valid
+                            if (!empty($row['start_date']) && $row['start_date'] !== '0000-00-00' &&
+                                !empty($row['end_date']) && $row['end_date'] !== '0000-00-00') {
+                                echo date("d-m-Y", strtotime($row['start_date'])) . " To " . date("d-m-Y", strtotime($row['end_date'])) . "<br>";
+                            }
+
+                            // Show start and end time if both are valid
+                            if (!empty($row['start_time']) && $row['start_time'] !== '00:00:00' &&
+                                !empty($row['end_time']) && $row['end_time'] !== '00:00:00') {
+                                echo date("g:i A", strtotime($row['start_time'])) . " To " . date("g:i A", strtotime($row['end_time']));
+                            }
+                            ?>
+
+                            <?= htmlspecialchars($row['city']); ?>
+
+                        </td> -->
+
+                        <td>
+                            <?= htmlspecialchars($row['llr_class']); ?>
+                            <?= htmlspecialchars($row['car_type']); ?>
+                        </td>
+
+                        <td>
+                            <?= htmlspecialchars($row['amount']); ?><br>
+                        </td>
+
+                        <td><?= htmlspecialchars($row['recov_amount']); ?></td>
+                        <td><?= htmlspecialchars($row['bal_amount']); ?></td>
+                        <td class="summary-col"></td>
+
+                        <!-- <td>
+                            <?php
+                                if (!empty($row['start_date']) && $row['start_date'] !== '0000-00-00' && !empty($row['end_date']) && $row['end_date'] !== '0000-00-00') {
+                                    echo date("d-m-Y", strtotime($row['start_date'])) . " To " . date("d-m-Y", strtotime($row['end_date']));
+                                } else {
+                                    echo "-";
+                                }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                                $start = $row['start_time'];
+                                $end = $row['end_time'];
+                                if (!empty($start) && !empty($end) && $start !== '00:00:00' && $end !== '00:00:00') {
+                                    echo date("g:i A", strtotime($start)) . " To " . date("g:i A", strtotime($end));
+                                } else {
+                                    echo "-";
+                                }
+                            ?>
+                        </td> -->
+
+                        <!-- <td><?= htmlspecialchars($row['contact']); ?></td> -->
+                         
+                        <td class="action-col"><?= htmlspecialchars($row['form_status']); ?></td>
+                        <td class="action-col">
+                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') : ?>
+                                <a href="bmds-form.php?action=edit&id=<?= $row['id']; ?>" class="text-decoration-none text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a> 
+                                
+                                &nbsp;/&nbsp;
+                                
+                                <a class="text-decoration-none text-dark" data-bs-toggle="modal" data-bs-target="#passwordModal" data-item-id="<?= $row['id']; ?>">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                            <?php endif; ?>
+                        </td>
+                        <td class="action-col">
+                            <a href="bmds-form.php?action=add_new&id=<?php echo $row['id']; ?>" class="btn sub-btn1 text-dark" >
+                                Upgrade
+                            </a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+                            </form>
+    <?php endforeach; ?>
+<?php else: ?>
+    <p>No records found for today.</p>
+<?php endif; ?>
+       
+       
         
     </div>
         

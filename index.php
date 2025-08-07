@@ -30,6 +30,20 @@
             
         </div>
 
+        <div class="text-center mt-5">
+            <div class="row">
+                <div class="col-md-4 bg-info p-3">
+                    <h4>Dream Client : 1 Lakh</h4>
+                </div>
+                <div class="col-md-4 bg-warning p-3">
+                    <h4>Total Client : <?php echo $total_client; ?></h4>
+                </div>
+                <div class="col-md-4 bg-info p-3">
+                    <h4>Today's Total Client : <?php echo $todays_total_client; ?></h4>
+                </div>
+            </div>
+        </div>
+
         <div class="text-center mt-5 p-3" style="background-color: #1da5e9;">
             <!-- Date Range Form -->
             <form method="GET" action="" style="display: flex; justify-content: center; align-items: center; gap: 15px;">

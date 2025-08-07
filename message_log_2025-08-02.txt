@@ -1,0 +1,26 @@
+2025-08-02 14:26:54 - === New Request ===
+2025-08-02 14:26:54 - POST Data: Array
+(
+    [action] => sms
+    [selected_clients] => Array
+        (
+            [0] => 44|
+        )
+
+)
+
+2025-08-02 14:26:54 - Processing client: {"id":44,"contact":"9022645448","name":"NAMRATA YEVALE","status":"COMPLETE","message_sent":"1"}
+2025-08-02 14:26:54 - Final Response: {"status":"complete","timestamp":"2025-08-02 14:26:54","total_clients":1,"processed":1,"details":[{"client":"NAMRATA YEVALE","contact":"9022645448","status":"already_sent","message":"Message was already sent previously"}]}
+2025-08-02 14:38:12 - === New Request ===
+2025-08-02 14:38:12 - POST Data: Array
+(
+    [action] => sms
+    [selected_clients] => Array
+        (
+            [0] => 44|
+        )
+
+)
+
+2025-08-02 14:38:12 - Processing client: {"id":44,"contact":"9022645448","name":"NAMRATA YEVALE","status":"COMPLETE","message_sent":"1"}
+2025-08-02 14:38:12 - Final Response: {"status":"complete","timestamp":"2025-08-02 14:38:12","total_clients":1,"processed":1,"details":[{"client":"NAMRATA YEVALE","contact":"9022645448","status":"already_sent","message":"Message was already sent previously"}]}

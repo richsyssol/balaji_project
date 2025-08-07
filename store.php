@@ -36,31 +36,54 @@
 
 <script>
     function printImage() {
-        const imgSrc = document.getElementById("imageToPrint").src;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Print Image</title>
-                    <style>
-                        body, html {
-                            margin: 0;
-                            padding: 0;
-                            text-align: center;
-                        }
-                        img {
-                            width: 100%;
-                            height: auto;
-                        }
-                    </style>
-                </head>
-                <body onload="window.print(); window.close();">
+    const imgSrc = document.getElementById("imageToPrint").src;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print Image</title>
+                <style>
+                    @page {
+                        size: A4 landscape;
+                        margin: 5mm;
+                    }
+                    body, html {
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
+                        width: 100%;
+                        box-sizing: border-box;
+                    }
+                    .print-container {
+                        padding: 5px;
+                        text-align: center;
+                        box-sizing: border-box;
+                        height: 100%;
+                        width: 100%;
+                    }
+                    img {
+                        max-width: 100%;
+                        max-height: 95%;
+                        width: auto;
+                        height: auto;
+                        page-break-inside: avoid;
+                        break-inside: avoid;
+                        border: 1px solid #ccc;
+                        padding: 10px;
+                        background: #fff;
+                    }
+                </style>
+            </head>
+            <body onload="window.print(); setTimeout(() => window.close(), 500);">
+                <div class="print-container">
                     <img src="${imgSrc}" alt="Image to Print">
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-    }
+                </div>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
 </script>
 
 
@@ -69,4 +92,3 @@
     include 'include/footer.php';
 ?>
 
-<?php //} ?>

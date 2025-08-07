@@ -116,6 +116,13 @@
                     <span>Image Store</span>
                 </a>
             </li>
+
+            <li class="nav-item nav-name">
+                <a class="nav-link text-white" href="billing_system">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Reports</span>
+                </a>
+            </li>
         <?php endif; ?>
 
         <!-- Fields visible to both admin and user -->
@@ -157,6 +164,8 @@
                     <span>Reports</span>
                 </a>
             </li>
+
+            
 
         <?php endif; ?>
 

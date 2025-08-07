@@ -1,0 +1,15 @@
+2025-08-02 14:20:50 - Received POST request: Array
+(
+    [action] => sms
+    [selected_clients] => Array
+        (
+            [0] => 44|
+        )
+
+)
+
+2025-08-02 14:20:50 - Processing client: 44|
+2025-08-02 14:20:50 - Fetching client details for ID: 44
+2025-08-02 14:20:50 - Client details - Contact: 9022645448, Name: NAMRATA YEVALE, Status: COMPLETE, Message Sent: 1
+2025-08-02 14:20:50 - Message already sent to 9022645448
+2025-08-02 14:20:50 - Final response: {"status":"success","summary":"\u2705 Sent to 0 client(s). \u274c Failed for 0. \ud83d\udd01 Already sent: 1.","details":["Already sent to NAMRATA YEVALE (9022645448)"]}

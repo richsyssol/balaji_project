@@ -447,7 +447,8 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
             }
 
             if (isset($sql) && $conn->query($sql) === TRUE) {
-                header("Location: gic");
+                header("Location: gic?show_message_prompt=1&id=$id");
+
                 exit();
             } else {
                 echo "Error updating record: " . ($conn->error ?? "SQL query not properly constructed");

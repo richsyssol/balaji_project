@@ -701,7 +701,30 @@ include 'session_check.php';
         
     <div id="reportSection">   
         
-    
+    <h3>Summary : </h3>
+        <table class="table table-bordered my-5">
+            <thead>
+                <tr>
+                    <th>No Of Job's</th>
+                    <th>Premium</th>
+                    <th>Advance</th>
+                    <th>Recovery</th>
+                    <th>Gov Fee</th>
+                    <th>Cash In Hand</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><?php echo $total_records ?></td>
+                    <td><?php echo $total_amount ?></td>
+                    <td><?php echo $total_adv_amount ?> </td>
+                    <td><?php echo $total_recov_amount ?> </td>
+                    <td><?php echo $total_gov_amount ?> </td>
+                    <td><?php echo $total_other_amount ?> </td>
+                </tr>
+            </tbody>
+        </table>
+        
         <div class="heading">
             <?php
                 
@@ -718,6 +741,8 @@ include 'session_check.php';
             Delete Selected
         </button>
     </div>
+
+    
 
 
         <table class="table table-bordered my-5">
@@ -813,29 +838,7 @@ include 'session_check.php';
             </tbody>
         </table>
             </form>
-        <h3>Summary : </h3>
-        <table class="table table-bordered my-5">
-            <thead>
-                <tr>
-                    <th>No Of Job's</th>
-                    <th>Premium</th>
-                    <th>Advance</th>
-                    <th>Recovery</th>
-                    <th>Gov Fee</th>
-                    <th>Cash In Hand</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><?php echo $total_records ?></td>
-                    <td><?php echo $total_amount ?></td>
-                    <td><?php echo $total_adv_amount ?> </td>
-                    <td><?php echo $total_recov_amount ?> </td>
-                    <td><?php echo $total_gov_amount ?> </td>
-                    <td><?php echo $total_other_amount ?> </td>
-                </tr>
-            </tbody>
-        </table>
+        
         
     
     </div>

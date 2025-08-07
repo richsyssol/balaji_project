@@ -1098,7 +1098,13 @@ ob_start();
             
 ?>
 
-
+        <!-- button for hide/unhide contact number row -->
+        <div class="row mb-3 action-col">
+            <div class="col-md-5 mt-4">
+                
+                <button class="btn btn-warning" id="toggleContact" type="button">Contact Hide</button>
+            </div>
+        </div>
         
         <hr></hr>
         
@@ -1108,6 +1114,40 @@ ob_start();
     <div id="reportSection">   
 
         <div  id="companyReport" style="display: block;">
+
+
+         <h3>Summary : </h3>
+            <table class="table table-bordered my-5">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>No Of Policies</th>
+                        <th>Premium</th>
+                        <th>Recovery</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Motor</strong></td>
+                        <td><?php echo $motor_count; ?></td>
+                        <td><?php echo $motor_amount; ?></td>
+                        <td><?php echo $motor_recov_amount; ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Non-Motor</strong></td>
+                        <td><?php echo $nonmotor_count; ?></td>
+                        <td><?php echo $nonmotor_amount; ?></td>
+                        <td><?php echo $nonmotor_recov_amount; ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td><?php echo $total_records; ?></td>
+                        <td><?php echo $total_amount; ?></td>
+                        <td><?php echo $total_recov_amount; ?></td>
+                    </tr>
+                    
+                </tbody>
+            </table>
         
             <div class="heading">
                 <?php
@@ -1135,21 +1175,15 @@ ob_start();
             </div>
 
             <form id="whatsappForm">
-                <div class="row mb-3 action-col">
-                    <div class="col-md-5 mt-4">
-                        <button type="submit" class="btn btn-success" name="action" value="whatsapp">Send WhatsApp Messages</button>
-                        <button type="submit" class="btn btn-info" name="action" value="sms">Send Text SMS</button>
-                        <button class="btn btn-warning" id="toggleContact" type="button">Contact Hide</button>
-                    </div>
-                </div>
+                
 
-               
+              
+
 
 
                 <table class="table table-bordered my-5">
                 <thead>
                     <tr>
-                        <th class="action-col"><input type="checkbox" id="selectAll"></th>
                         <th scope="col" class="action-col">#</th>
                         <th scope="col" class="action-col">Client ID</th>
                         <th scope="col">Reg No.</th>
@@ -1209,7 +1243,6 @@ ob_start();
                             ?>
                             
                             <tr>
-                                <td class="action-col"><input type="checkbox" name="selected_clients[]" value="<?= $row['contact'] . '|' . $row['client_name'] ?>"></td>
                                 <th scope="row" class="action-col"><?= $srNo++ ?></th>
                                 <td class="action-col"> <?php echo htmlspecialchars($row['client_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['reg_num']); ?></td>
@@ -1357,39 +1390,7 @@ ob_start();
 
 
 
-            <h3>Summary : </h3>
-            <table class="table table-bordered my-5">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>No Of Policies</th>
-                        <th>Premium</th>
-                        <th>Recovery</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Motor</strong></td>
-                        <td><?php echo $motor_count; ?></td>
-                        <td><?php echo $motor_amount; ?></td>
-                        <td><?php echo $motor_recov_amount; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Non-Motor</strong></td>
-                        <td><?php echo $nonmotor_count; ?></td>
-                        <td><?php echo $nonmotor_amount; ?></td>
-                        <td><?php echo $nonmotor_recov_amount; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Total</strong></td>
-                        <td><?php echo $total_records; ?></td>
-                        <td><?php echo $total_amount; ?></td>
-                        <td><?php echo $total_recov_amount; ?></td>
-                    </tr>
-                    
-                </tbody>
-            </table>
-
+            
 
         </div>
     
@@ -1527,6 +1528,173 @@ ob_start();
     </div>
   </div>
 </div>
+
+
+<!-- Add these modals before the closing </body> tag -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalLabel">Send Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Do you want to send a message to this client?</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="messageType" id="whatsappRadio" value="whatsapp" checked>
+                    <label class="form-check-label" for="whatsappRadio">WhatsApp</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="messageType" id="smsRadio" value="sms">
+                    <label class="form-check-label" for="smsRadio">SMS</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="sendBoth" id="sendBoth">
+                    <label class="form-check-label" for="sendBoth">Send Both</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                <button type="button" class="btn btn-primary" id="sendMessageBtn">Yes, Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="responseModal" tabindex="-1" aria-labelledby="responseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="responseModalLabel">Message Response</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="responseMessage">
+                <!-- Response will be shown here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Show modal if URL has show_message_prompt parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const showPrompt = urlParams.get('show_message_prompt');
+    const clientId = urlParams.get('id');
+    
+    if (showPrompt && clientId) {
+        const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+        messageModal.show();
+        
+        // Remove the parameter from URL without reloading
+        history.replaceState(null, null, window.location.pathname);
+        
+        // Handle send message button click
+        $('#sendMessageBtn').click(function() {
+            const whatsappChecked = $('#whatsappRadio').is(':checked');
+            const smsChecked = $('#smsRadio').is(':checked');
+            const sendBoth = $('#sendBoth').is(':checked');
+            
+            let messageTypes = [];
+            
+            if (sendBoth) {
+                messageTypes = ['whatsapp', 'sms'];
+            } else {
+                if (whatsappChecked) messageTypes.push('whatsapp');
+                if (smsChecked) messageTypes.push('sms');
+            }
+            
+            if (messageTypes.length === 0) {
+                alert('Please select at least one message type');
+                return;
+            }
+            
+            // Show loading state
+            $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...');
+            $(this).prop('disabled', true);
+
+            // Hide the message modal immediately when Yes is clicked
+            messageModal.hide();
+            
+            // Get client details
+            $.ajax({
+                url: 'get-client-details.php',
+                method: 'POST',
+                data: { id: clientId },
+                dataType: 'json',
+                success: function(client) {
+                    if (!client) {
+                        alert('Client not found');
+                        $('#sendMessageBtn').html('Yes, Send').prop('disabled', false);
+                        return;
+                    }
+                    
+                    // Send messages sequentially
+                    sendMessagesSequentially(client, messageTypes, 0, messageModal);
+                },
+                error: function() {
+                    alert('Error fetching client details');
+                    $('#sendMessageBtn').html('Yes, Send').prop('disabled', false);
+                }
+            });
+        });
+    }
+});
+
+function sendMessagesSequentially(client, messageTypes, index, messageModal) {
+    if (index >= messageTypes.length) {
+        // All messages sent, reset button
+        $('#sendMessageBtn').html('Yes, Send').prop('disabled', false);
+        return;
+    }
+    
+    const type = messageTypes[index];
+    const formData = new FormData();
+    formData.append('action', type);
+    formData.append('selected_clients[]', `${client.contact}|${client.client_name}`);
+    
+    fetch("gic-msg.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.text())
+    .then(data => {
+        // Show response
+        const responseModal = new bootstrap.Modal(document.getElementById('responseModal'));
+        let responseHtml = $('#responseMessage').html();
+        responseHtml += `<div class="alert alert-${data.includes('success') ? 'success' : 'danger'}">
+            <strong>${type.toUpperCase()} to ${client.client_name} (${client.contact}):</strong><br>
+            ${data}
+        </div>`;
+        $('#responseMessage').html(responseHtml);
+        
+        if (index === 0) {
+            // Show modal only for first response
+            responseModal.show();
+        }
+        
+        // Send next message
+        sendMessagesSequentially(client, messageTypes, index + 1, messageModal);
+    })
+    .catch(err => {
+        let responseHtml = $('#responseMessage').html();
+        responseHtml += `<div class="alert alert-danger">
+            <strong>Error sending ${type} to ${client.client_name} (${client.contact}):</strong><br>
+            ${err}
+        </div>`;
+        $('#responseMessage').html(responseHtml);
+        
+        const responseModal = new bootstrap.Modal(document.getElementById('responseModal'));
+        responseModal.show();
+        
+        // Continue with next message even if this one failed
+        sendMessagesSequentially(client, messageTypes, index + 1, messageModal);
+    });
+}
+</script>
 
 
 <!-- script for print password verify -->
@@ -1719,34 +1887,34 @@ document.getElementById('downloadpdf').addEventListener('click', function () {
 <script>
 // script for send whatsapp and text sms 
 
-    let clickedAction = null;
+    // let clickedAction = null;
 
-    // Detect which button was clicked
-    document.querySelectorAll('#whatsappForm button[type="submit"]').forEach(button => {
-        button.addEventListener("click", function () {
-            clickedAction = this.value;
-        });
-    });
+    // // Detect which button was clicked
+    // document.querySelectorAll('#whatsappForm button[type="submit"]').forEach(button => {
+    //     button.addEventListener("click", function () {
+    //         clickedAction = this.value;
+    //     });
+    // });
 
-    document.getElementById("whatsappForm").addEventListener("submit", function (e) {
-        e.preventDefault();
+    // document.getElementById("whatsappForm").addEventListener("submit", function (e) {
+    //     e.preventDefault();
 
-        const form = new FormData(this);
-        form.append("action", clickedAction); // Pass action: whatsapp or sms
+    //     const form = new FormData(this);
+    //     form.append("action", clickedAction); // Pass action: whatsapp or sms
 
-        fetch("gic-msg.php", {
-            method: "POST",
-            body: form
-        })
-        .then(res => res.text())
-        .then(data => {
-            alert(data);
-            location.reload();
-        })
-        .catch(err => {
-            alert("Error: " + err);
-        });
-    });
+    //     fetch("gic-msg.php", {
+    //         method: "POST",
+    //         body: form
+    //     })
+    //     .then(res => res.text())
+    //     .then(data => {
+    //         alert(data);
+    //         location.reload();
+    //     })
+    //     .catch(err => {
+    //         alert("Error: " + err);
+    //     });
+    // });
 
 
     // script for hide and unhide contact column from table

@@ -574,7 +574,24 @@ ob_start();
         
         
         
-    <div id="reportSection">   
+    <div id="reportSection"> 
+        
+    
+    <h3>Summary : </h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Total Records</th>
+                    <th>Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><?php echo $total_records ?></td>
+                    <td><?php echo $total_amount ?></td>
+                </tr>
+            </tbody>
+        </table>
     
         <div class="heading">
             <?php
@@ -593,6 +610,8 @@ ob_start();
         </button>
     </div>
 
+
+        
     
         <table class="table table-bordered my-5">
             <thead>
@@ -689,16 +708,7 @@ ob_start();
             </tbody>
         </table>
             </form>
-        <?php 
-            
-            // Output results
-                
-                echo "<h3>Summary : </h3>";
-                
-                echo "Total Records: <strong>$total_records</strong><br>";
-                echo "Total Amount: <strong>$total_amount</strong><br>";
-
-        ?>
+       
     </div>
         
         <!-- Pagination Links -->
