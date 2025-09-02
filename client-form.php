@@ -117,7 +117,23 @@ elseif (isset($_GET['action']) && $_GET['action'] === 'add_new') {
     
 }
 
+// Google Sheets configuration
+define('SPREADSHEET_ID', '1q5lMS5MKC5KQ9FPzg9HXBYvizBF5R_cKS_5h2yGN_mE');
+define('CREDENTIALS_PATH', __DIR__ . '/credentials.json');
+define('SHEET_NAME', 'Client Database'); // Name of your sheet
 
+// Include Google Sheets helper
+require_once __DIR__ . '/GoogleSheetsHelper.php';
+
+// Initialize Google Sheets helper
+// Initialize Google Sheets helper
+try {
+    $googleSheets = new GoogleSheetsHelper(SPREADSHEET_ID, CREDENTIALS_PATH);
+} catch (Exception $e) {
+    // Log error but don't stop execution
+    error_log("Google Sheets initialization failed: " . $e->getMessage());
+    $googleSheets = null; // Set to null so we can check later
+}
 
 // Handle form submission (add, edit, or delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -186,6 +202,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If no errors, process the form
     if (empty($errors)) {
+
+         // Prepare data for Google Sheets
+    $sheetData = [
+        $reg_num,
+        $policy_date,
+        $time,
+        $client_name,
+        $client_type,
+        $address,
+        $contact,
+        $contact_alt,
+        $birth_date,
+        $anniversary_date,
+        $email,
+        $gst_no,
+        $pan_no,
+        $aadhar_no,
+        $inquiry,
+        $reference,
+        $age,
+        $tag,
+        $pincode,
+        $creation_on,
+        $update_on,
+    ];
+
 
         if ($is_edit) {
             $aadhar_no = $_POST['aadhar_no'];
@@ -260,7 +302,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
                 $stmt = $conn->prepare($sql);
                 
-                
+               // Update Google Sheet only if initialized successfully
+            if ($googleSheets !== null) {
+                try {
+                    // Find the row to update (assuming reg_num is unique)
+                    $rowNumber = $googleSheets->findRowByValue(SHEET_NAME, 'reg_num', $reg_num);
+                    
+                    if ($rowNumber) {
+                        $range = SHEET_NAME . '!A' . $rowNumber . ':W' . $rowNumber; // Note: W instead of V (added username)
+                        $googleSheets->updateData($range, [$sheetData]);
+                    } else {
+                        // If not found, append as new row
+                        $googleSheets->appendData(SHEET_NAME . '!A:W', [$sheetData]); // Note: W instead of V
+                    }
+                } catch (Exception $e) {
+                    // Log error but don't interrupt the process
+                    error_log("Google Sheets update error: " . $e->getMessage());
+                }
+            }
         
                 if ($stmt->execute()) {
                     // If contact or other details are changed, update them in all related tables
@@ -356,12 +415,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sql = "INSERT INTO client (reg_num, policy_date, time, client_name, client_type, address, contact, contact_alt, birth_date, anniversary_date, email, gst_no, pan_no, aadhar_no, inquiry, reference, age, tag, pincode) 
                         VALUES ('$reg_num', '$policy_date', '$time', '$client_name', '$client_type', '$address', '$contact', '$contact_alt', '$birth_date', '$anniversary_date', '$email', '$gst_no', '$pan_no', '$aadhar_no', '$inquiry', '$reference', '$age', '$tag', '$pincode')";
                 
-                if ($conn->query($sql) === TRUE) {
-                    header("Location: client");
-                    exit();
-                } else {
-                    echo "Error: " . $conn->error;
+                 // Add to Google Sheet
+           if ($googleSheets !== null) {
+                try {
+                    $googleSheets->appendData(SHEET_NAME . '!A:W', [$sheetData]); // Note: W instead of V
+                } catch (Exception $e) {
+                    // Log error but don't interrupt the process
+                    error_log("Google Sheets append error: " . $e->getMessage());
                 }
+            }
+            
+            if ($conn->query($sql) === TRUE) {
+                header("Location: client");
+                exit();
+            }
             } 
         }
          

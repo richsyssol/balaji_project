@@ -118,9 +118,9 @@
             </li>
 
             <li class="nav-item nav-name">
-                <a class="nav-link text-white" href="billing_system">
+                <a class="nav-link text-white" href="bills_list">
                     <i class="fa-solid fa-file-invoice"></i>
-                    <span>Reports</span>
+                    <span>Bills</span>
                 </a>
             </li>
         <?php endif; ?>
