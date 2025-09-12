@@ -1183,7 +1183,7 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
                 if (!empty($end_date)) {
                     $endDateObj = DateTime::createFromFormat('Y-m-d', $end_date);
                     if ($endDateObj && $endDateObj >= $today) {
-                        $endDateObj->modify('+1 day');
+                        $endDateObj->modify('-1 day');
                         $nextStartDate = $endDateObj->format('Y-m-d');
                     }
                 }

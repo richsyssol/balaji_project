@@ -1,9 +1,5 @@
 <?php 
-
-
 ob_start();
-
-
     include 'include/header.php'; 
     include 'include/head.php'; 
     include 'session_check.php';
@@ -38,6 +34,7 @@ ob_start();
             $sub_type_selected = $_GET['sub_type'] ?? '';
             $nonmotor_subtype_selected = $_GET['nonmotor_subtype_select'] ?? '';
             $sort = $_GET['sort'] ?? '';
+            $duration = $_GET['duration'] ?? '';
             $start_date = $_GET['start_date'] ?? '';
             $end_date = $_GET['end_date'] ?? date('Y-m-d');
             $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -151,6 +148,16 @@ ob_start();
                         </select>
                     </div>
 
+                    <div class="col-md-1 field">
+                        <label class="form-label">Policy Duration:</label>
+                        <select name="duration" class="form-control">
+                            <option value="">All</option>
+                            <option value="1YR" <?= ($duration === '1YR') ? 'selected' : '' ?>>1 Year</option>
+                            <option value="SHORT" <?= ($duration === 'SHORT') ? 'selected' : '' ?>>Short Term</option>
+                            <option value="LONG" <?= ($duration === 'LONG') ? 'selected' : '' ?>>Long Term</option>
+                        </select>
+                    </div>
+
                     <div class="col-md-2 field">
                         <label class="form-label">Start Date :</label>
                         <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>" />
@@ -236,6 +243,7 @@ ob_start();
             $nonmotor_subtype_select = isset($_POST['nonmotor_subtype_select']) ? trim($_POST['nonmotor_subtype_select']) : (isset($_GET['nonmotor_subtype_select']) ? trim($_GET['nonmotor_subtype_select']) : '');
             $start_date = isset($_POST['start_date']) ? trim($_POST['start_date']) : (isset($_GET['start_date']) ? trim($_GET['start_date']) : '');
             $end_date = isset($_POST['end_date']) ? trim($_POST['end_date']) : (isset($_GET['end_date']) ? trim($_GET['end_date']) : '');
+            $duration = isset($_POST['duration']) ? trim($_POST['duration']) : (isset($_GET['duration']) ? trim($_GET['duration']) : '');
             
             
             // total count variable
@@ -297,7 +305,7 @@ ob_start();
 
             
             // Prepare the SQL query based on the search input
-            if (!empty($search_query) || !empty($status) || !empty($policy)|| !empty($search_mv) || !empty($start_date) || !empty($end_date) || !empty($sub_type) || !empty($nonmotor_subtype_select) || !empty($motor_subtype_select) || !empty($reg_num)) {
+            if (!empty($search_query) || !empty($status) || !empty($policy)|| !empty($search_mv) || !empty($start_date) || !empty($end_date) || !empty($sub_type) || !empty($nonmotor_subtype_select) || !empty($motor_subtype_select) || !empty($reg_num) || !empty($duration)) {
                 // Validate and convert date format if necessary
                 if (!empty($start_date)) {
                     $start_date = date('Y-m-d', strtotime($start_date));
@@ -403,16 +411,16 @@ ob_start();
                 // Add ORDER BY clause for Expiry Date
                 if (!empty($status)) {
                     if ($status === 'Expiry Date') {
-                        // For normal policies (not long-term) or the final year of long-term policies
+                        // For normal policies (1 year) or the final year of long-term policies
                         $sql .= " AND (
-                                    (is_long_term = 0 AND end_date BETWEEN ? AND ?) 
+                                    (policy_duration IN ('1YR', 'SHORT') AND end_date BETWEEN ? AND ?) 
                                     OR 
-                                    (is_long_term = 1 AND end_date BETWEEN ? AND ?)
+                                    (policy_duration = 'LONG' AND end_date BETWEEN ? AND ?)
                                 )";
                         
                         // For long-term policies, also check virtual yearly expiry dates
                         $sql .= " OR (
-                                    is_long_term = 1 
+                                    policy_duration = 'LONG' 
                                     AND YEAR(end_date) - year_count + 1 <= YEAR(?) 
                                     AND YEAR(end_date) >= YEAR(?)
                                     AND DATE(CONCAT(YEAR(?), '-', MONTH(end_date), '-', DAY(end_date))) BETWEEN ? AND ?
@@ -442,6 +450,14 @@ ob_start();
                     if ($policy === 'Motor' || $policy === 'NonMotor') {
                         $sql .= " AND policy_type = ?";
                         $params[] = $policy;
+                        $param_types .= 's';
+                    }
+                }
+
+                if (!empty($duration)) {
+                    if ($duration === '1YR' || $duration === 'SHORT' || $duration === 'LONG') {
+                        $sql .= " AND policy_duration = ?";
+                        $params[] = $duration;
                         $param_types .= 's';
                     }
                 }
@@ -611,18 +627,19 @@ ob_start();
                 }
 
                 // Add ORDER BY clause for Expiry Date
+                
                 if (!empty($status)) {
                     if ($status === 'Expiry Date') {
-                        // For normal policies (not long-term) or the final year of long-term policies
+                        // For normal policies (1 year) or the final year of long-term policies
                         $count_sql .= " AND (
-                                    (is_long_term = 0 AND end_date BETWEEN ? AND ?) 
+                                    (policy_duration IN ('1YR', 'SHORT') AND end_date BETWEEN ? AND ?) 
                                     OR 
-                                    (is_long_term = 1 AND end_date BETWEEN ? AND ?)
+                                    (policy_duration = 'LONG' AND end_date BETWEEN ? AND ?)
                                 )";
                         
                         // For long-term policies, also check virtual yearly expiry dates
                         $count_sql .= " OR (
-                                    is_long_term = 1 
+                                    policy_duration = 'LONG' 
                                     AND YEAR(end_date) - year_count + 1 <= YEAR(?) 
                                     AND YEAR(end_date) >= YEAR(?)
                                     AND DATE(CONCAT(YEAR(?), '-', MONTH(end_date), '-', DAY(end_date))) BETWEEN ? AND ?
@@ -652,6 +669,15 @@ ob_start();
                     if ($policy === 'Motor' || $policy === 'NonMotor') {
                         $count_sql .= " AND policy_type = ?";
                         $count_params[] = $policy;
+                        $count_param_types .= 's';
+                    }
+                }
+
+
+                if (!empty($duration)) {
+                    if ($duration === '1YR' || $duration === 'SHORT' || $duration === 'LONG') {
+                        $count_sql .= " AND policy_duration = ?";
+                        $count_params[] = $duration;
                         $count_param_types .= 's';
                     }
                 }
@@ -1221,6 +1247,7 @@ ob_start();
                         <th scope="col">Policy Number</th>
                         <th scope="col">Expiry</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Duration</th>
                         <th scope="col" class="summary-col">Remark</th> <!-- Add Summary column for print -->
                         <th scope="col" class="action-col">Action</th>
                         <th scope="col" class="action-col"></th>
@@ -1292,6 +1319,7 @@ ob_start();
                                 </td>
 
                                 <td><?php echo htmlspecialchars($row['form_status']); ?></td>
+                                <td><?php echo htmlspecialchars($row['policy_duration']); ?></td>
                                     
                                 <td class="summary-col"></td> <!-- Blank Summary column for print -->
                                     

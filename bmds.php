@@ -319,12 +319,12 @@ ob_start();  // Start output buffering
                 $order = 'DESC';
             }
             elseif ($sortOption === 'sr_num_asc') {
-    $sortColumn = 'CAST(sr_num AS UNSIGNED)';  // Cast to number for proper numeric sorting
-    $order = 'ASC';
-} elseif ($sortOption === 'sr_num_desc') {
-    $sortColumn = 'CAST(sr_num AS UNSIGNED)';  // Cast to number for proper numeric sorting
-    $order = 'DESC';
-} elseif ($sortOption === 'date_asc') {
+                $sortColumn = 'CAST(sr_num AS UNSIGNED)';  // Cast to number for proper numeric sorting
+                $order = 'ASC';
+            } elseif ($sortOption === 'sr_num_desc') {
+                $sortColumn = 'CAST(sr_num AS UNSIGNED)';  // Cast to number for proper numeric sorting
+                $order = 'DESC';
+            } elseif ($sortOption === 'date_asc') {
                 $sortColumn = 'policy_date';
                 $order = 'ASC';
             } elseif ($sortOption === 'date_desc') {

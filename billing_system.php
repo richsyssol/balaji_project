@@ -204,18 +204,11 @@ if (isset($_GET['search_clients'])) {
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <label for="service_type" class="form-label">Service Type</label>
-                                    <select name="service_type" id="service_type" class="form-select" required>
-                                        <option value="General">General Service</option>
-                                        <option value="Insurance">Insurance</option>
-                                        <option value="Consultation">Consultation</option>
-                                        <option value="Maintenance">Maintenance</option>
-                                        <option value="Repair">Repair</option>
-                                        <option value="Other">Other</option>
-                                    </select>
+                                    <label for="notes" class="form-label">Service Type</label>
+                                    <input type="text" name="service_type" id="service_type" class="form-control">
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3" id="client_details" style="display: none;">
                                 <div class="card">
                                     <div class="card-header bg-light">
@@ -304,8 +297,6 @@ if (isset($_GET['search_clients'])) {
     </div>
     </section>
 
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Client search functionality
         document.getElementById('client_search').addEventListener('input', function() {

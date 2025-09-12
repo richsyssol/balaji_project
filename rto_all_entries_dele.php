@@ -28,7 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ids = array_map('intval', $ids);
             $idList = implode(',', $ids);
 
-            $query = "UPDATE rto_entries SET is_deleted = 1, deleted_at = NOW() WHERE id IN ($idList)";
+            $query = "UPDATE rto_entries 
+                        SET 
+                            amount = 0,
+                            adv_amount = 0,
+                            gov_amount = 0,
+                            other_amount = 0,
+                            recov_amount = 0,
+                            expenses = 0,
+                            net_amt = 0
+                        WHERE id IN ($idList)";
             if ($conn->query($query)) {
                 echo "<script>alert('Selected records deleted successfully.'); window.location.href='rto.php';</script>";
             } else {

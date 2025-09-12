@@ -738,7 +738,7 @@ include 'session_check.php';
          <form method="POST" id="bulkDeleteForm">
     <div class="float-end pb-3">
         <button type="button" class="btn sub-btn1 mt-4 bg-danger text-light" data-bs-toggle="modal" data-bs-target="#passwordModalSelected">
-            Delete Selected
+            Clear
         </button>
     </div>
 
