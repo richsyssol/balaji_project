@@ -872,7 +872,7 @@ ob_start();  // Start output buffering
         
      <div id="reportSection">  
         
-     
+     <?php echo $bmds_type; ?>
       <h1>Summary :</h1>
         
 
@@ -889,6 +889,7 @@ ob_start();  // Start output buffering
                 </tr>
             </thead>
             <tbody> 
+                <?php if ($bmds_type === '' || $bmds_type === 'LLR'): ?>
                 <tr class="text-center">
                     <td colspan="7"><strong>LLR FRESH</strong></td>
                 </tr>
@@ -961,6 +962,10 @@ ob_start();  // Start output buffering
                     <td><?php echo $llr_recov_amount; ?></td>
                     <td><?php echo $llr_bal_amount; ?></td>
                 </tr>
+ <?php endif; ?>
+        
+        <?php if ($bmds_type === '' || $bmds_type === 'DL'): ?>
+
                 <tr class="text-center">
                     <td colspan="7"><strong>DL FRESH</strong></td>
                 </tr>
@@ -1063,6 +1068,9 @@ ob_start();  // Start output buffering
                     <td><?php echo $dl_recov_amount; ?></td>
                     <td><?php echo $dl_bal_amount; ?></td>
                 </tr>
+                 <?php endif; ?>
+        
+        <?php if ($bmds_type === '' || $bmds_type === 'ADM'): ?>
                 <tr class="text-center">
                     <td colspan="7"><strong>ADM TOTAL</strong></td>
                 </tr>
@@ -1075,6 +1083,7 @@ ob_start();  // Start output buffering
                     <td><?php echo $adm_recov_amount; ?></td>
                     <td><?php echo $adm_bal_amount; ?></td>
                 </tr>
+                 <?php endif; ?>
                 <tr class="text-center">
                     <td colspan="7"><strong>ALL TOTAL</strong></td>
                 </tr>

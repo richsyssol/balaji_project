@@ -1,6 +1,7 @@
 <?php
 include 'include/head.php'; 
-    include 'session_check.php';
+include 'session_check.php';
+
 // Database connection
 include 'includes/db_conn.php';
 
@@ -105,31 +106,6 @@ function generateBillData($client, $service_type, $items, $subtotal, $tax, $tax_
     
     return json_encode($bill_data);
 }
-
-// Function to fetch client suggestions
-function getClientSuggestions($conn, $search) {
-    $search = $conn->real_escape_string($search);
-    $query = $conn->query("SELECT id, client_name FROM client WHERE client_name LIKE '%$search%' LIMIT 5");
-    
-    if (!$query) {
-        return ['error' => $conn->error];
-    }
-    
-    $suggestions = [];
-    while ($row = $query->fetch_assoc()) {
-        $suggestions[] = $row;
-    }
-    
-    return $suggestions;
-}
-
-// AJAX handler for client search
-if (isset($_GET['search_clients'])) {
-    $search = $_GET['search_term'] ?? '';
-    $suggestions = getClientSuggestions($conn, $search);
-    echo json_encode($suggestions);
-    exit;
-}
 ?>
 
 <section class="d-flex pb-5">
@@ -149,42 +125,47 @@ if (isset($_GET['search_clients'])) {
         <div class="bg-white con-tbl p-5">
 
     <style>
-        .suggestion-item { 
-            padding: 10px; 
-            cursor: pointer; 
-            border-bottom: 1px solid #eee;
-        }
-        .suggestion-item:hover { 
-            background-color: #f0f0f0; 
-        }
-        #client_suggestions { 
-            border: 1px solid #ddd; 
-            max-height: 200px; 
-            overflow-y: auto; 
-            display: none; 
-            position: absolute; 
-            background: white; 
-            z-index: 1000; 
-            width: 100%; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .bill-summary {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 4px;
-            margin: 20px 0;
-        }
-        .bill-summary .total {
-            font-weight: bold;
-            font-size: 18px;
-            border-top: 2px solid #0d6efd;
-            padding-top: 10px;
-            margin-top: 10px;
-        }
-        .item-row {
-            margin-bottom: 10px;
-        }
-    </style>
+    .suggestion-item { 
+        padding: 10px; 
+        cursor: pointer; 
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.2s;
+    }
+    .suggestion-item:hover { 
+        background-color: #f8f9fa; 
+    }
+    .suggestion-item .small {
+        font-size: 12px;
+    }
+    #client_suggestions { 
+        border: 1px solid #ddd; 
+        max-height: 250px; 
+        overflow-y: auto; 
+        display: none; 
+        position: absolute; 
+        background: white; 
+        z-index: 1000; 
+        width: 100%; 
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 4px;
+    }
+    .bill-summary {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+    }
+    .bill-summary .total {
+        font-weight: bold;
+        font-size: 18px;
+        border-top: 2px solid #0d6efd;
+        padding-top: 10px;
+        margin-top: 10px;
+    }
+    .item-row {
+        margin-bottom: 10px;
+    }
+</style>
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-10">
@@ -210,25 +191,28 @@ if (isset($_GET['search_clients'])) {
                             </div>
 
                             <div class="mb-3" id="client_details" style="display: none;">
-                                <div class="card">
-                                    <div class="card-header bg-light">
-                                        <h5 class="mb-0">Client Details</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <p><strong>Name:</strong> <span id="client_name"></span></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p><strong>Contact:</strong> <span id="client_contact"></span></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p><strong>Address:</strong> <span id="client_address"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Client Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Name:</strong> <span id="client_name"></span></p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Primary Contact:</strong> <span id="client_contact"></span></p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Alternate Contact:</strong> <span id="client_contact_alt"></span></p>
+                </div>
+                <div class="col-md-12">
+                    <p><strong>Address:</strong> <span id="client_address"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                             
                             <div class="mb-4">
                                 <h5 class="mb-3">Bill Items</h5>
@@ -299,75 +283,99 @@ if (isset($_GET['search_clients'])) {
 
     <script>
         // Client search functionality
-        document.getElementById('client_search').addEventListener('input', function() {
-            const searchTerm = this.value.trim();
-            if (searchTerm.length < 2) {
-                document.getElementById('client_suggestions').style.display = 'none';
+document.getElementById('client_search').addEventListener('input', function() {
+    const searchTerm = this.value.trim();
+    if (searchTerm.length < 2) {
+        document.getElementById('client_suggestions').style.display = 'none';
+        return;
+    }
+    
+    fetch(`ajax_handlers.php?search_clients=1&search_term=${encodeURIComponent(searchTerm)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const suggestionsDiv = document.getElementById('client_suggestions');
+            suggestionsDiv.innerHTML = '';
+            
+            if (data.error) {
+                document.getElementById('search_error').textContent = data.error;
                 return;
             }
             
-            fetch(`billing_system.php?search_clients=1&search_term=${encodeURIComponent(searchTerm)}`)
-                .then(response => response.json())
-                .then(data => {
-                    const suggestionsDiv = document.getElementById('client_suggestions');
-                    suggestionsDiv.innerHTML = '';
+            if (data.length > 0) {
+                data.forEach(client => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
                     
-                    if (data.error) {
-                        document.getElementById('search_error').textContent = data.error;
-                        return;
+                    // Create display text with name and contact numbers
+                    let displayText = client.client_name;
+                    if (client.contact) {
+                        displayText += ` - ${client.contact}`;
+                    }
+                    if (client.contact_alt) {
+                        displayText += ` / ${client.contact_alt}`;
                     }
                     
-                    if (data.length > 0) {
-                        data.forEach(client => {
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.textContent = client.client_name;
-                            div.dataset.id = client.id;
-                            div.addEventListener('click', function() {
-                                selectClient(client.id);
-                            });
-                            suggestionsDiv.appendChild(div);
-                        });
-                        suggestionsDiv.style.display = 'block';
-                    } else {
-                        suggestionsDiv.style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('search_error').textContent = 'Error fetching suggestions';
-                    console.error('Error:', error);
+                    div.innerHTML = `
+                        <div><strong>${client.client_name}</strong></div>
+                        <div class="small text-muted">
+                            ${client.contact ? client.contact : ''}
+                            ${client.contact_alt ? ' / ' + client.contact_alt : ''}
+                        </div>
+                    `;
+                    
+                    div.dataset.id = client.id;
+                    div.addEventListener('click', function() {
+                        selectClient(client.id);
+                    });
+                    suggestionsDiv.appendChild(div);
                 });
+                suggestionsDiv.style.display = 'block';
+            } else {
+                suggestionsDiv.style.display = 'none';
+                suggestionsDiv.innerHTML = '<div class="suggestion-item text-muted">No clients found</div>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('search_error').textContent = 'Error fetching suggestions';
+            console.error('Error:', error);
         });
-        
-        // Select client from suggestions
-        function selectClient(clientId) {
-            fetch(`client_details.php?id=${clientId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(client => {
-                    if (client.error) {
-                        document.getElementById('search_error').textContent = client.error;
-                        return;
-                    }
-                    
-                    document.getElementById('client_id').value = client.id;
-                    document.getElementById('client_search').value = client.client_name;
-                    document.getElementById('client_name').textContent = client.client_name;
-                    document.getElementById('client_contact').textContent = client.contact;
-                    document.getElementById('client_address').textContent = client.address;
-                    document.getElementById('client_details').style.display = 'block';
-                    document.getElementById('client_suggestions').style.display = 'none';
-                    document.getElementById('search_error').textContent = '';
-                })
-                .catch(error => {
-                    document.getElementById('search_error').textContent = 'Error fetching client details';
-                    console.error('Error:', error);
-                });
-        }
+});
+
+// Select client from suggestions
+function selectClient(clientId) {
+    fetch(`ajax_handlers.php?client_details=1&client_id=${clientId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(client => {
+            if (client.error) {
+                document.getElementById('search_error').textContent = client.error;
+                return;
+            }
+            
+            document.getElementById('client_id').value = client.id;
+            document.getElementById('client_search').value = client.client_name;
+            document.getElementById('client_name').textContent = client.client_name;
+            document.getElementById('client_contact').textContent = client.contact || 'N/A';
+            document.getElementById('client_contact_alt').textContent = client.contact_alt || 'N/A';
+            document.getElementById('client_address').textContent = client.address || 'N/A';
+            document.getElementById('client_details').style.display = 'block';
+            document.getElementById('client_suggestions').style.display = 'none';
+            document.getElementById('search_error').textContent = '';
+        })
+        .catch(error => {
+            document.getElementById('search_error').textContent = 'Error fetching client details';
+            console.error('Error:', error);
+        });
+}
         
         // Close suggestions when clicking outside
         document.addEventListener('click', function(e) {
