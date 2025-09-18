@@ -13,7 +13,8 @@ $report = [];
 $total_adv_amount = 0; // To store the total advance amount
 $total_recov_amount = 0; // To store the total recovery amount
 $total_entries_count = 0;
-// $entry_counts = []; // To store entry counts for each department
+$department_totals = []; // To store totals for each department
+$entry_counts = []; // To store entry counts for each department
 
 // Check if the form is submitted
 if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($_POST['generate_pdf'])) {
@@ -78,6 +79,16 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
             // break;
     }
 
+    // Initialize department totals array
+    $department_totals = [
+        'BMDS' => ['count' => 0, 'adv_amount' => 0, 'recov_amount' => 0],
+        'GIC' => ['count' => 0, 'adv_amount' => 0, 'recov_amount' => 0],
+        'LIC' => ['count' => 0, 'adv_amount' => 0, 'recov_amount' => 0],
+        'R/JOB' => ['count' => 0, 'adv_amount' => 0, 'recov_amount' => 0],
+        'MF' => ['count' => 0, 'adv_amount' => 0, 'recov_amount' => 0]
+    ];
+
+
     // Handle date range and department specific query
     switch ($department) {
         case 'BMDS':
@@ -103,7 +114,7 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
     
         case 'R/JOB':
             $table_name = "rto_entries";
-            $query = "SELECT reg_num, policy_date, client_name, contact, address, NULL AS car_type, mv_no AS mv_number, NULL AS vehicle, NULL AS job_type, mv_no,  adv_amount AS policy_amt,NULL AS collection_job,NULL AS work_status,NULL AS mf_option,NULL AS insurance_option,NULL AS nonmotor_type_select,NULL AS nonmotor_subtype_select,dl_type_work, tr_type_work, nt_type_work, recov_amount, username, form_status,NULL AS bmds_type,NULL AS llr_type,NULL AS mdl_type, 'R/JOB' AS department 
+            $query = "SELECT reg_num, policy_date, client_name, contact, address, NULL AS car_type, NULL AS vehicle, NULL AS job_type, mv_no,  adv_amount AS policy_amt,NULL AS collection_job,NULL AS work_status,NULL AS mf_option,NULL AS insurance_option,NULL AS nonmotor_type_select,NULL AS nonmotor_subtype_select,dl_type_work, tr_type_work, nt_type_work, recov_amount, username, form_status,NULL AS bmds_type,NULL AS llr_type,NULL AS mdl_type, 'R/JOB' AS department 
                     FROM $table_name 
                     WHERE is_deleted = 0 AND policy_date BETWEEN '$from_date' AND '$to_date' $search_condition $status_condition";
             break;
@@ -170,6 +181,14 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
                 $report[] = $row; // Store results in the report array
                 $total_adv_amount += $row['policy_amt']; // Sum up policy amounts
                 $total_recov_amount += $row['recov_amount']; // Sum up recovery amounts
+
+                // Update department-wise totals
+            $dept = $row['department'];
+            if (isset($department_totals[$dept])) {
+                $department_totals[$dept]['count']++;
+                $department_totals[$dept]['adv_amount'] += $row['policy_amt'];
+                $department_totals[$dept]['recov_amount'] += $row['recov_amount'];
+            }
             }
 
             // Get total count of matched entries for the selected filters
@@ -250,6 +269,8 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
     
 }
 ?>
+
+
 
 <?php
     include 'include/header.php';
@@ -342,6 +363,7 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') : ?>
                     <button type="button" class="btn sub-btn1" onclick="showPasswordModal()">Print</button>
                     <button id="showPasswordField" class="btn sub-btn1">Excel</button>
+                    <a href="chart" class="btn sub-btn1">Graph</a>
                     <div class="row">
                         <div class="col-md-1">
                         <button type="button" class="btn sub-btn1 mt-4" onclick="copyContacts()">Copy Contacts</button>
@@ -362,8 +384,9 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
                 </div>
             </form>
 
-            
+             
 
+            
             <div id="reportSection">
             <?php if (!empty($report)): ?>
 
@@ -379,25 +402,45 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
                     ?>
 
                 </div>
-                <table class="table table-bordered pt-5">
-                    <h3>Summary : </h3>
-                    <thead>
-                        <tr>
-                            <th>Total Entries</th>
-                            <th>Total Policy Amount</th>
-                            <th>Total Recovery Amount</th>
-                            
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><?php echo $total_entries_count ?></td>
-                            <td><?php echo $total_adv_amount ?></td>
-                            <td><?php echo $total_recov_amount ?> </td>
-                            
-                        </tr>
-                    </tbody>
-                </table>
+
+                <!-- Department-wise summary table -->
+                <?php if ($department == 'All'): ?>
+                <div class="mt-5">
+                    <h4>Summary</h4>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Number of Entries</th>
+                                <th>Total Advance Amount</th>
+                                <th>Total Recovery Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($department_totals as $dept => $totals): 
+                                if ($totals['count'] > 0): ?>
+                                <tr>
+                                    <td><?php echo $dept; ?></td>
+                                    <td><?php echo $totals['count']; ?></td>
+                                    <td><?php echo number_format($totals['adv_amount'], 2); ?></td>
+                                    <td><?php echo number_format($totals['recov_amount'], 2); ?></td>
+                                </tr>
+                            <?php endif;
+                            endforeach; ?>
+                            <tr>
+                                <td><strong>Grand Total</strong></td>
+                                <td><strong><?php echo $total_entries_count; ?></strong></td>
+                                <td><strong><?php echo number_format($total_adv_amount, 2); ?></strong></td>
+                                <td><strong><?php echo number_format($total_recov_amount, 2); ?></strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+                
+                </div>
+
+                
 
             <form id="whatsappForm">
                 <div class="row mb-3 action-col">
@@ -591,7 +634,8 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
                
             </form>
 
-<script>
+
+<script> 
 
     // Select/Deselect all checkboxes
     document.getElementById('selectAll').addEventListener('change', function () {

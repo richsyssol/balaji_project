@@ -34,7 +34,6 @@ $vehicleTypeResult = $conn->query($vehicleTypeQuery);
 $subtypeTypeQuery = "SELECT DISTINCT sub_type FROM gic_entries WHERE sub_type IS NOT NULL AND sub_type != '' ORDER BY sub_type";
 $subtypeTypeResult = $conn->query($subtypeTypeQuery);
 
-
 // Fetch unique nonmotor sub types from the database
 $nonmotorSubtypeQuery = "SELECT DISTINCT nonmotor_subtype_select FROM gic_entries WHERE nonmotor_subtype_select IS NOT NULL AND nonmotor_subtype_select != '' ORDER BY nonmotor_subtype_select";
 $nonmotorSubtypeResult = $conn->query($nonmotorSubtypeQuery);
@@ -45,8 +44,8 @@ $policy_type = $_POST['policy_type'] ?? '';
 $vehicle_type = $_POST['vehicle_type'] ?? '';
 $sub_type = $_POST['sub_type'] ?? '';
 $nonmotor_subtype_select = $_POST['nonmotor_subtype_select'] ?? '';
-$start_date = $_POST['start_date'] ?? '';
-$end_date = $_POST['end_date'] ?? '';
+$start_search_date = $_POST['start_search_date'] ?? '';
+$end_search_date = $_POST['end_search_date'] ?? '';
 
 // Initialize variables for totals
 $total_entries = 0;
@@ -68,7 +67,7 @@ $isExpiryReport = isset($_POST['expiry_report']) && $_POST['expiry_report'] == '
 $dateColumn = $isExpiryReport ? 'end_date' : 'policy_date';
 
 // Default order for both expiry report and regular report: reg_num ASC
-$orderByClause = "ORDER BY reg_num ASC"; // Default sorting by reg_num ASC
+$orderByClause = "ORDER BY reg_num ASC";
 
 // Check if a sorting option has been selected
 if (isset($_POST['sort'])) {
@@ -99,23 +98,24 @@ if (isset($_POST['sort'])) {
             $order = 'DESC';
             break;
         default:
-            // Optionally handle invalid sort options or set default sorting
-            $sortColumn = 'reg_num'; // Default to sorting by reg_num
-            $order = 'ASC'; // Ascending order by default
+            $sortColumn = 'reg_num';
+            $order = 'ASC';
             break;
     }
-
-    // Update the orderByClause based on the selected sort column and order
     $orderByClause = "ORDER BY $sortColumn $order";
 } 
 
-// Force sorting by end_date ASC if expiry report is requested (override all other sort options)
+// Force sorting by end_date ASC if expiry report is requested
 if ($isExpiryReport) {
     $orderByClause = "ORDER BY end_date ASC";
 }
 
 // Check if start_date and end_date are provided
-if ($start_date && $end_date) {
+if ($start_search_date && $end_search_date) {
+    // Convert dates to proper format for comparison
+    $start_date_formatted = date('Y-m-d', strtotime($start_search_date));
+    $end_date_formatted = date('Y-m-d', strtotime($end_search_date));
+    
     // Main query to fetch policy entries and amounts
     $query = "
         SELECT 
@@ -134,10 +134,26 @@ if ($start_date && $end_date) {
         FROM 
             gic_entries
         WHERE 
-            $dateColumn BETWEEN ? AND ?
-            AND (
-                is_deleted = 0
-            )
+            " . ($isExpiryReport ? 
+                // For expiry reports, find policies that expire in the selected period
+                // For normal policies (1 year) or the final year of long-term policies
+                "(
+                    (policy_duration IN ('1YR', 'SHORT') AND end_date BETWEEN ? AND ?) 
+                    OR 
+                    (policy_duration = 'LONG' AND end_date BETWEEN ? AND ?)
+                )
+                
+                -- For long-term policies, also check virtual yearly expiry dates
+                OR (
+                    policy_duration = 'LONG' 
+                    AND YEAR(end_date) - year_count + 1 <= YEAR(?) 
+                    AND YEAR(end_date) >= YEAR(?)
+                    AND DATE(CONCAT(YEAR(?), '-', MONTH(end_date), '-', DAY(end_date))) BETWEEN ? AND ?
+                )" 
+                : "policy_date BETWEEN ? AND ?") . "
+            AND is_deleted = 0
+            " . ($isExpiryReport ? " AND is_renewed = 0" : "") . "
+            " . ($isExpiryReport ? " AND id NOT IN (SELECT renewal_of FROM gic_entries WHERE renewal_of IS NOT NULL)" : "") . "
             " . ($policy_company ? " AND policy_company = ?" : "") . 
             ($policy_type ? " AND policy_type = ?" : "") .
             ($vehicle_type ? " AND vehicle_type = ?" : "") .
@@ -150,8 +166,27 @@ if ($start_date && $end_date) {
 
     // Prepare statement with dynamic binding
     $stmt = $conn->prepare($query);
-    $params = [$start_date, $end_date];
-    $types = 'ss';
+    
+    if ($stmt === false) {
+        die("Error preparing query: " . $conn->error);
+    }
+    
+    if ($isExpiryReport) {
+        // For expiry reports with multi-year policy support
+        $params = [
+            $start_date_formatted, $end_date_formatted, // For normal policies
+            $start_date_formatted, $end_date_formatted, // For final year of long-term policies
+            $end_date_formatted,   // YEAR(end_date) - year_count + 1 <= YEAR(?)
+            $start_date_formatted, // YEAR(end_date) >= YEAR(?)
+            $end_date_formatted,   // For virtual date construction
+            $start_date_formatted, $end_date_formatted  // Virtual date BETWEEN
+        ];
+        $types = 'sssssssss'; // 9 string parameters
+    } else {
+        // For regular reports based on policy application date
+        $params = [$start_date_formatted, $end_date_formatted];
+        $types = 'ss';
+    }
 
     if ($policy_company) { $params[] = $policy_company; $types .= 's'; }
     if ($policy_type) { $params[] = $policy_type; $types .= 's'; }
@@ -185,11 +220,12 @@ if ($start_date && $end_date) {
     $stmt->close();
 }
 
-// Fetch client details with dynamic ORDER BY based on expiry report flag
+// Fetch client details with dynamic ORDER BY
 $clientQuery = "
     SELECT 
         reg_num,
         policy_date,
+        start_date,
         contact,
         client_name,
         policy_type,
@@ -203,14 +239,36 @@ $clientQuery = "
         sub_type,
         nonmotor_subtype_select,
         nonmotor_type_select,
-        amount
+        amount,
+        pay_mode,
+        recov_amount,
+        policy_duration,
+        year_count,
+        is_renewed,
+        renewal_of
     FROM 
         gic_entries
     WHERE 
-        $dateColumn BETWEEN ? AND ?
-        AND (
-            is_deleted = 0
-        )
+        " . ($isExpiryReport ? 
+            // For expiry reports, find policies that expire in the selected period
+            // For normal policies (1 year) or the final year of long-term policies
+            "(
+                (policy_duration IN ('1YR', 'SHORT') AND end_date BETWEEN ? AND ?) 
+                OR 
+                (policy_duration = 'LONG' AND end_date BETWEEN ? AND ?)
+            )
+            
+            -- For long-term policies, also check virtual yearly expiry dates
+            OR (
+                policy_duration = 'LONG' 
+                AND YEAR(end_date) - year_count + 1 <= YEAR(?) 
+                AND YEAR(end_date) >= YEAR(?)
+                AND DATE(CONCAT(YEAR(?), '-', MONTH(end_date), '-', DAY(end_date))) BETWEEN ? AND ?
+            )" 
+            : "policy_date BETWEEN ? AND ?") . "
+        AND is_deleted = 0
+        " . ($isExpiryReport ? " AND is_renewed = 0" : "") . "
+        " . ($isExpiryReport ? " AND id NOT IN (SELECT renewal_of FROM gic_entries WHERE renewal_of IS NOT NULL)" : "") . "
         " . ($policy_company ? " AND policy_company = ?" : "") . 
         ($policy_type ? " AND policy_type = ?" : "") .
         ($vehicle_type ? " AND vehicle_type = ?" : "") .
@@ -218,25 +276,44 @@ $clientQuery = "
         ($nonmotor_subtype_select ? " AND nonmotor_subtype_select = ?" : "") .
         ($search_query ? " AND (client_name LIKE ? OR contact LIKE ? OR policy_number LIKE ?)" : "") . "
     $orderByClause
-    ";
+";
 
-    // Prepare and bind parameters for client query
-    $stmt = $conn->prepare($clientQuery);
-    $params = [$start_date, $end_date];
+// Prepare and bind parameters for client query
+$stmt = $conn->prepare($clientQuery);
+
+if ($stmt === false) {
+    die("Error preparing client query: " . $conn->error);
+}
+
+if ($isExpiryReport) {
+    // For expiry reports with multi-year policy support
+    $params = [
+        $start_date_formatted, $end_date_formatted, // For normal policies
+        $start_date_formatted, $end_date_formatted, // For final year of long-term policies
+        $end_date_formatted,   // YEAR(end_date) - year_count + 1 <= YEAR(?)
+        $start_date_formatted, // YEAR(end_date) >= YEAR(?)
+        $end_date_formatted,   // For virtual date construction
+        $start_date_formatted, $end_date_formatted  // Virtual date BETWEEN
+    ];
+    $types = 'sssssssss'; // 9 string parameters
+} else {
+    // For regular reports based on policy application date
+    $params = [$start_date_formatted, $end_date_formatted];
     $types = 'ss';
+}
 
-    if ($policy_company) { $params[] = $policy_company; $types .= 's'; }
-    if ($policy_type) { $params[] = $policy_type; $types .= 's'; }
-    if ($vehicle_type) { $params[] = $vehicle_type; $types .= 's'; }
-    if ($sub_type) { $params[] = $sub_type; $types .= 's'; }
-    if ($nonmotor_subtype_select) { $params[] = $nonmotor_subtype_select; $types .= 's'; }
-    if ($search_query) {
-        $search_term = "%$search_query%";
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $types .= 'sss';
-    }
+if ($policy_company) { $params[] = $policy_company; $types .= 's'; }
+if ($policy_type) { $params[] = $policy_type; $types .= 's'; }
+if ($vehicle_type) { $params[] = $vehicle_type; $types .= 's'; }
+if ($sub_type) { $params[] = $sub_type; $types .= 's'; }
+if ($nonmotor_subtype_select) { $params[] = $nonmotor_subtype_select; $types .= 's'; }
+if ($search_query) {
+    $search_term = "%$search_query%";
+    $params[] = $search_term;
+    $params[] = $search_term;
+    $params[] = $search_term;
+    $types .= 'sss';
+}
 
 $stmt->bind_param($types, ...$params);
 $stmt->execute();
@@ -244,11 +321,6 @@ $clientResult = $stmt->get_result();
 $clientDetails = $clientResult->fetch_all(MYSQLI_ASSOC);
 
 $stmt->close();
-
-
-
-
-
 $conn->close();
  
 
@@ -397,13 +469,13 @@ if (isset($_POST['download_pdf'])) {
         
         <div class="ps-5">
             <div>
-                <h1>COMPANYWISE REPORT</h1>
+                <h1>Companywise Booked Business Report</h1>
             </div>
             <nav aria-label="breadcrumb">
               <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index">Dashboard</a></li>
                 <li class="breadcrumb-item" aria-current="page"><a href="gic">GIC</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Companywise Report</li>
+                <li class="breadcrumb-item active" aria-current="page">Companywise Booked Business Report</li>
               </ol>
             </nav>
         </div>
@@ -443,8 +515,8 @@ if (isset($_POST['download_pdf'])) {
             $firstDayOfMonth = date('Y-m-01');
             $lastDayOfMonth = date('Y-m-t');
 
-            $start_date = $_POST['start_date'] ?? $firstDayOfMonth;
-            $end_date = $_POST['end_date'] ?? $lastDayOfMonth;
+            $start_search_date = $_POST['start_search_date'] ?? $firstDayOfMonth;
+            $end_search_date = $_POST['end_search_date'] ?? $lastDayOfMonth;
         ?>
         
         <form method="POST">
@@ -529,13 +601,13 @@ if (isset($_POST['download_pdf'])) {
                 </div>
 
                 <div class="col-md-2 field">
-                    <label for="start_date" class="form-label">Start Date :</label>
-                    <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date); ?>" />
+                    <label for="start_search_date" class="form-label">Start Date :</label>
+                    <input type="date" name="start_search_date" class="form-control" value="<?= htmlspecialchars($start_search_date); ?>" />
                 </div>
 
                 <div class="col-md-2 field">
-                    <label for="end_date" class="form-label">End Date :</label>
-                    <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date); ?>" />
+                    <label for="end_search_date" class="form-label">End Date :</label>
+                    <input type="date" name="end_search_date" class="form-control" value="<?= htmlspecialchars($end_search_date); ?>" />
                 </div>
         
                 <div class="col-md-1">
@@ -577,7 +649,7 @@ if (isset($_POST['download_pdf'])) {
                 
 
                     <div id="companyReport">
-                        <h1 class="text-center">Companywise Report</h1>
+                        <h1 class="text-center">Companywise Booked Business Report</h1>
                         <table class="table table-bordered my-5">
                             <thead>
                                 <tr>
@@ -629,8 +701,8 @@ if (isset($_POST['download_pdf'])) {
                         
                         <h2 class="text-center">
                             <?php 
-                                $formatted_start_date = date("d/m/Y", strtotime($start_date));
-                                $formatted_end_date = date("d/m/Y", strtotime($end_date));
+                                $formatted_start_date = date("d/m/Y", strtotime($start_search_date));
+                                $formatted_end_date = date("d/m/Y", strtotime($end_search_date));
                                 echo "GIC Report From $formatted_start_date To $formatted_end_date";
                             ?>
                         </h2>
@@ -678,6 +750,7 @@ if (isset($_POST['download_pdf'])) {
                                         <?= (!empty($client['end_date']) && $client['end_date'] !== '0000-00-00') 
                                             ? date('d/m/Y', strtotime($client['end_date'])) 
                                             : '00-00-0000' ?>
+                                            <?= $client['policy_duration'] ?>
                                     </td>
 
                                     

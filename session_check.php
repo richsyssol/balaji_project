@@ -1,7 +1,7 @@
 <?php
 // Hide ALL errors
-error_reporting(0);
-ini_set('display_errors', 0);
+// error_reporting(0);
+// ini_set('display_errors', 0);
 
 
 // Check if a session is not already active before calling session_start()
