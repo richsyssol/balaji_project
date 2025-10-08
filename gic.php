@@ -59,6 +59,9 @@ ob_start();
                 } elseif ($sort === 'exp_asc') {
                     $sortColumn = 'end_date';
                     $order = 'ASC';
+                }elseif ($sort === 'exp_desc') {
+                    $sortColumn = 'end_date';
+                    $order = 'DESC';
                 }
             }
 
@@ -81,7 +84,7 @@ ob_start();
             <form method="GET" class="p-3">
                 <div class="row">
                     <div class="col-md-3 field">
-                        <label class="form-label">Search :</label>
+                        <label class="form-label">Search (Use Comma For Multi-Search) :</label>
                         <input type="text" name="search_query" class="form-control" value="<?= htmlspecialchars($search_query) ?>" placeholder="Name And Contact" />
                     </div>
 
@@ -145,6 +148,7 @@ ob_start();
                             <option value="date_desc" <?= ($sort === 'date_desc') ? 'selected' : '' ?>>Date (DESC)</option>
                             <option value="date_asc" <?= ($sort === 'date_asc') ? 'selected' : '' ?>>Date (ASC)</option>
                             <option value="exp_asc" <?= ($sort === 'exp_asc') ? 'selected' : '' ?>>Expiry Date (ASC)</option>
+                            <option value="exp_desc" <?= ($sort === 'exp_desc') ? 'selected' : '' ?>>Expiry Date (DESC)</option>
                         </select>
                     </div>
 
@@ -300,6 +304,9 @@ ob_start();
                     } elseif ($sortOption === 'exp_asc') {
                         $sortColumn = 'end_date';
                         $order = 'ASC';
+                    }elseif ($sortOption === 'exp_desc') {
+                        $sortColumn = 'end_date';
+                        $order = 'DESC';
                     }
                 }
 
@@ -1141,39 +1148,40 @@ ob_start();
 
         <div  id="companyReport" style="display: block;">
 
-
-         <h3>Summary : </h3>
-            <table class="table table-bordered my-5">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>No Of Policies</th>
-                        <th>Premium</th>
-                        <th>Recovery</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Motor</strong></td>
-                        <td><?php echo $motor_count; ?></td>
-                        <td><?php echo $motor_amount; ?></td>
-                        <td><?php echo $motor_recov_amount; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Non-Motor</strong></td>
-                        <td><?php echo $nonmotor_count; ?></td>
-                        <td><?php echo $nonmotor_amount; ?></td>
-                        <td><?php echo $nonmotor_recov_amount; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Total</strong></td>
-                        <td><?php echo $total_records; ?></td>
-                        <td><?php echo $total_amount; ?></td>
-                        <td><?php echo $total_recov_amount; ?></td>
-                    </tr>
-                    
-                </tbody>
-            </table>
+            <div class="action-col">
+                <h3>Summary : </h3>
+                <table class="table table-bordered my-5">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>No Of Policies</th>
+                            <th>Premium</th>
+                            <th>Recovery</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Motor</strong></td>
+                            <td><?php echo $motor_count; ?></td>
+                            <td><?php echo $motor_amount; ?></td>
+                            <td><?php echo $motor_recov_amount; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Non-Motor</strong></td>
+                            <td><?php echo $nonmotor_count; ?></td>
+                            <td><?php echo $nonmotor_amount; ?></td>
+                            <td><?php echo $nonmotor_recov_amount; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><?php echo $total_records; ?></td>
+                            <td><?php echo $total_amount; ?></td>
+                            <td><?php echo $total_recov_amount; ?></td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
         
             <div class="heading">
                 <?php
@@ -1207,7 +1215,7 @@ ob_start();
 
 
 
-                <table class="table table-bordered my-5">
+            <table class="table table-bordered my-5">
                 <thead>
                     <tr>
                         <th scope="col" class="action-col">#</th>
@@ -1412,12 +1420,52 @@ ob_start();
                     }
                     ?>
                 </tbody>
+                
             </table>
+
+            
+            <table class="table table-bordered my-5 summary-col">
+                <h2>Summary : </h2>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>No Of Policies</th>
+                            <th>Premium</th>
+                            <th>Recovery</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Motor</strong></td>
+                            <td><?php echo $motor_count; ?></td>
+                            <td><?php echo $motor_amount; ?></td>
+                            <td><?php echo $motor_recov_amount; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Non-Motor</strong></td>
+                            <td><?php echo $nonmotor_count; ?></td>
+                            <td><?php echo $nonmotor_amount; ?></td>
+                            <td><?php echo $nonmotor_recov_amount; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><?php echo $total_records; ?></td>
+                            <td><?php echo $total_amount; ?></td>
+                            <td><?php echo $total_recov_amount; ?></td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
             </form>
 
+            
+            <div class="summary-col pt-5">
+                <p><strong>Note : </strong>This is computer generated report. Kindly refer original documents for more information and verification.</p>
+            </div>
 
+            
 
-
+            
             
 
         </div>

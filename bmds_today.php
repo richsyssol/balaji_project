@@ -20,7 +20,7 @@ $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : $defaultEndDate;
 // Query to fetch active trainings for the selected date range
 $sql = "SELECT * FROM bmds_entries 
         WHERE start_date <= ? AND end_date >= ? AND is_deleted = 0 
-        ORDER BY start_date ASC, start_time ASC";
+        ORDER BY start_time ASC, start_date ASC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("ss", $endDate, $startDate);
 $stmt->execute();
@@ -29,9 +29,8 @@ $result = $stmt->get_result();
 // Group data by date and then by start_time
 $groupedData = [];
 while ($row = $result->fetch_assoc()) {
-    $dateKey = date("Y-m-d", strtotime($row['start_date']));
     $timeKey = date("g:i A", strtotime($row['start_time']));
-    $groupedData[$dateKey][$timeKey][] = $row;
+    $groupedData[$timeKey][] = $row;
 }
 
 // Close the database connection
@@ -83,10 +82,8 @@ $conn->close();
 
                 <?php
                 $totalCount = 0;
-                foreach ($groupedData as $dateGroup) {
-                    foreach ($dateGroup as $timeGroup) {
-                        $totalCount += count($timeGroup);
-                    }
+                foreach ($groupedData as $timeGroup) {
+                    $totalCount += count($timeGroup);
                 }
                 echo "<h3>Total Trainings: " . $totalCount . "</h3>";
                 ?>
@@ -95,10 +92,9 @@ $conn->close();
 
                 <!-- Display the grouped data -->
                 <?php if (!empty($groupedData)): ?>
-                    <?php foreach ($groupedData as $date => $timeGroups): ?>
                         <div class="date-group mb-4">
                             
-                            <?php foreach ($timeGroups as $time => $entries): ?>
+                            <?php foreach ($groupedData as $time => $entries): ?>
                                 <div class="time-group mb-3">
                                     <h4 class="ms-3"><?php echo htmlspecialchars($time) . ' / Count: ' . count($entries); ?></h4>
                                     
@@ -153,7 +149,6 @@ $conn->close();
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                    <?php endforeach; ?>
                 <?php else: ?>
                     <p>No records found for the selected date range.</p>
                 <?php endif; ?>

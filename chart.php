@@ -52,7 +52,10 @@ if (isset($_POST['generate_report']) || true) {
     // Calculate grand total
     $total_entries_count = array_sum($department_totals);
 
-    // Prepare chart data - don't include grand total as a separate bar
+    // Sort departments by count in Asending order (biggest first)
+    asort($department_totals);
+
+    // Prepare chart data - sorted by count Asending
     $chart_data = [
         'labels' => array_keys($department_totals),
         'data'   => array_values($department_totals)
@@ -107,19 +110,58 @@ if (isset($_POST['generate_report']) || true) {
                         $formatted_start_date = date("d/m/Y", strtotime($from_date));
                         $formatted_end_date = date("d/m/Y", strtotime($to_date));
                         echo "<h4 class='text-center'>Graph From $formatted_start_date TO $formatted_end_date</h4>";
-                        echo "<h5 class='text-center'>Total Entries: $total_entries_count</h5>";
                     ?>
                 </div>
 
+                
+
                 <!-- Graph Section -->
                 <div class="row mt-4">
-                    <div class="col-md-8 mx-auto">
+                    <div class="col-md-10 mx-auto">
                         <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Department-wise Entry Count</h5>
-                            </div>
+                            
                             <div class="card-body">
-                                <canvas id="entriesChart" height="250"></canvas>
+                                <canvas id="entriesChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Entries Table -->
+                <div class="row mt-4 mb-5">
+                    <div class="col-md-6 mx-auto">
+                        <div class="card">
+                            <div class="card-body p-0">
+                                <table class="table table-bordered table-striped mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Department</th>
+                                            <th>Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php 
+                                        $counter = 0;
+                                        $colors = ['table-primary', 'table-success', 'table-warning', 'table-info', 'table-danger'];
+                                        foreach ($department_totals as $dept => $count): 
+                                            $percentage = $total_entries_count > 0 ? round(($count / $total_entries_count) * 100, 2) : 0;
+                                            $color_class = $colors[$counter % count($colors)];
+                                            $counter++;
+                                        ?>
+                                            <tr class="<?= $color_class ?>">
+                                                <td><strong><?= htmlspecialchars($dept) ?></strong></td>
+                                                <td><?= $count ?></td>
+                                                <td><?= $percentage ?>%</td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        <tr class="table-dark">
+                                            <td><strong>GRAND TOTAL</strong></td>
+                                            <td><strong><?= $total_entries_count ?></strong></td>
+                                            <td><strong>100%</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -128,40 +170,70 @@ if (isset($_POST['generate_report']) || true) {
                 <script>
                 document.addEventListener('DOMContentLoaded', function() {
                     const ctx = document.getElementById('entriesChart').getContext('2d');
+                    
+                    // Define colors for the chart
+                    const backgroundColors = [
+                        'rgba(54, 162, 235, 0.8)',  // Blue
+                        'rgba(75, 192, 192, 0.8)',  // Green
+                        'rgba(255, 206, 86, 0.8)',  // Yellow
+                        'rgba(153, 102, 255, 0.8)', // Purple
+                        'rgba(255, 99, 132, 0.8)'   // Red
+                    ];
+                    
+                    const borderColors = [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ];
+
                     const chartData = {
                         labels: <?php echo json_encode($chart_data['labels']); ?>,
                         datasets: [{
                             label: 'Number of Entries',
                             data: <?php echo json_encode($chart_data['data']); ?>,
-                            backgroundColor: [
-                                'rgba(54, 162, 235, 0.7)', 
-                                'rgba(75, 192, 192, 0.7)', 
-                                'rgba(255, 206, 86, 0.7)', 
-                                'rgba(153, 102, 255, 0.7)', 
-                                'rgba(255, 99, 132, 0.7)'
-                            ],
-                            borderColor: [
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 99, 132, 1)'
-                            ],
-                            borderWidth: 1
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 2,
+                            borderRadius: 5,
+                            borderSkipped: false,
                         }]
                     };
 
                     const options = {
                         responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: { 
-                                position: 'top' 
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                }
                             },
                             tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleFont: { size: 14 },
+                                bodyFont: { size: 14 },
                                 callbacks: {
                                     label: function(context) {
                                         return context.dataset.label + ': ' + context.raw;
                                     }
+                                }
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: function(value) {
+                                    return value;
+                                },
+                                font: {
+                                    weight: 'bold',
+                                    size: 12
                                 }
                             }
                         },
@@ -170,21 +242,50 @@ if (isset($_POST['generate_report']) || true) {
                                 beginAtZero: true,
                                 title: { 
                                     display: true, 
-                                    text: 'Number of Entries' 
+                                    text: 'Number of Entries',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
                                 },
                                 ticks: { 
                                     stepSize: 1,
-                                    precision: 0
+                                    precision: 0,
+                                    font: {
+                                        size: 12
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
                                 }
                             },
                             x: {
                                 title: { 
-                                    display: true, 
+                                    display: true,
+                                    text: 'Departments',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: false
                                 }
                             }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeOutQuart'
                         }
                     };
 
+                    // Create the chart
                     new Chart(ctx, { 
                         type: 'bar', 
                         data: chartData, 
@@ -210,3 +311,4 @@ if (isset($_POST['generate_report']) || true) {
 <?php 
     include 'include/header1.php'; 
     include 'include/footer.php';
+?>

@@ -12,7 +12,7 @@ include 'includes/db_conn.php';
 
 
 // Fetch expiry entries function
-function fetchexpiries($startDate = null, $endDate = null, $policyType = '', $policycompany = '', $policyvehicle = '', $subtype = '',$nonmotorsubtype = '') 
+function fetchexpiries($startDate = null, $endDate = null, $policyType = '', $policycompany = '', $policyvehicle = '', $subtype = '',$nonmotorsubtype = '', $search_query = '') 
 {
     global $conn;
 
@@ -20,6 +20,14 @@ function fetchexpiries($startDate = null, $endDate = null, $policyType = '', $po
     {
         $dateObj = DateTime::createFromFormat('d-m-Y', $date);
         return $dateObj ? $dateObj->format('Y-m-d') : false;
+    }
+
+     // Function to split search query by comma
+    function prepareSearchTerms($input) {
+        if (empty($input)) return [];
+        // Split by comma and remove empty entries
+        $terms = array_map('trim', explode(',', $input));
+        return array_filter($terms);
     }
 
     $startDateFormatted = $startDate ? convertToDBDate($startDate) : null;
@@ -56,6 +64,29 @@ function fetchexpiries($startDate = null, $endDate = null, $policyType = '', $po
 
     if (!empty($nonmotorsubtype)) {
         $query .= " AND nonmotor_subtype_select = '" . mysqli_real_escape_string($conn, $nonmotorsubtype) . "'";
+    }
+
+    // Add multi-search functionality for search_query
+    if (!empty($search_query)) {
+        $search_terms = prepareSearchTerms($search_query);
+        
+        if (!empty($search_terms)) {
+            $query .= " AND (";
+            $term_conditions = [];
+            
+            foreach ($search_terms as $term) {
+                $escaped_term = mysqli_real_escape_string($conn, $term);
+                // For each search term, match against multiple fields
+                $term_conditions[] = "(client_name LIKE '%$escaped_term%' 
+                                    OR contact LIKE '%$escaped_term%' 
+                                    OR policy_number LIKE '%$escaped_term%' 
+                                    OR mv_number LIKE '%$escaped_term%'
+                                    OR vehicle LIKE '%$escaped_term%'
+                                    OR address LIKE '%$escaped_term%')";
+            }
+            
+            $query .= implode(' OR ', $term_conditions) . ")";
+        }
     }
 
     $query .= " ORDER BY end_date ASC";
@@ -291,6 +322,7 @@ FOR NON-MOTOR POLICY :- Dear Sir/Mam, Your (nonmotor_type) Policy is expiring on
         $startDate = $_POST['start_date'] ?? null;
         $endDate = $_POST['end_date'] ?? null;
         $policyType = $_POST['policy'] ?? '';
+        $searchquery = $_POST['search_query'] ?? '';
         $policycompany = $_POST['policy_company'] ?? '';
         $policyvehicle = $_POST['vehicle_type'] ?? '';
         $subtype = $_POST['sub_type'] ?? '';
@@ -300,7 +332,7 @@ FOR NON-MOTOR POLICY :- Dear Sir/Mam, Your (nonmotor_type) Policy is expiring on
         $startDate = $startDate ? date('d-m-Y', strtotime($startDate)) : null;
         $endDate = $endDate ? date('d-m-Y', strtotime($endDate)) : null;
     
-        $result = fetchexpiries($startDate, $endDate, $policyType, $policycompany, $policyvehicle, $subtype, $nonmotorsubtype);
+        $result = fetchexpiries($startDate, $endDate, $policyType, $policycompany, $policyvehicle, $subtype, $nonmotorsubtype, $searchquery);
     
         if ($result === false) {
             $message = "Invalid date format.";
@@ -469,6 +501,7 @@ FOR NON-MOTOR POLICY :- Dear Sir/Mam, Your (nonmotor_type) Policy is expiring on
                     $start_date = $_POST['start_date'] ?? date('Y-m-d');
                     $end_date = $_POST['end_date'] ?? date('Y-m-d');
                     $policy = $_POST['policy'] ?? '';
+                    $search_query = $_POST['search_query'] ?? '';
                     $sub_type = $_POST['sub_type'] ?? '';
                     $selectedCompany = $_POST['policy_company'] ?? '';
                     $selectedvehicle = $_POST['vehicle_type'] ?? '';
@@ -484,6 +517,11 @@ FOR NON-MOTOR POLICY :- Dear Sir/Mam, Your (nonmotor_type) Policy is expiring on
                 <div class="col-md-2 field">
                     <label for="end_date" class="form-label">End Date :</label>
                     <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>" />
+                </div>
+
+                <div class="col-md-3 field">
+                    <label for="search_query" class="form-label">Search (Use Comma For Multi-Search) :</label>
+                    <input type="text" name="search_query" class="form-control" value="<?= htmlspecialchars($search_query) ?>" placeholder="Name, Contact" />
                 </div>
 
                 <div class="col-md-2 field">

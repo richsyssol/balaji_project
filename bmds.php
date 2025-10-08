@@ -53,6 +53,7 @@ ob_start();  // Start output buffering
             $bmds_type = $_GET['bmds_type'] ?? '';
             $selected_city = $_GET['city'] ?? '';
             $status = $_GET['status'] ?? '';
+            $attendance = $_GET['attendance'] ?? '';
             $date_type = $_GET['date_type'] ?? '';
             $sort = $_GET['sort'] ?? '';
             $start_date = $_GET['start_date'] ?? '';
@@ -148,6 +149,15 @@ ob_start();  // Start output buffering
                     </select>
                 </div>
 
+                <div class="col-md-2 field">
+                    <label class="form-label">Attendance :</label>
+                    <select name="attendance" class="form-control">
+                        <option value="">All</option>
+                        <option value="PRESENT" <?= ($attendance === 'PRESENT') ? 'selected' : '' ?>>PRESENT</option>
+                        <option value="ABSENT" <?= ($attendance === 'ABSENT') ? 'selected' : '' ?>>ABSENT</option>
+                    </select>
+                </div>
+
                 <!-- DATE TYPE -->
                 <div class="col-md-2 field">
                     <label class="form-label">Search By:</label>
@@ -206,6 +216,31 @@ ob_start();  // Start output buffering
     <?php 
         
         include 'includes/db_conn.php';
+
+        // Update task status
+        if (isset($_POST['update_attendance'])) {
+            $id = (int)$_POST['id'];
+            $newattendance = $conn->real_escape_string($_POST['attendance']);
+
+            
+                // Immediate attendance update
+                $query = "UPDATE bmds_entries SET attendance = '$newattendance' WHERE id = $id";
+
+            if ($conn->query($query)) {
+        // Redirect back to the same page with all parameters preserved
+        if (isset($_SERVER['HTTP_REFERER'])) {
+            header("Location: " . $_SERVER['HTTP_REFERER']);
+        } else {
+            header("Location: " . $_SERVER['PHP_SELF']);
+        }
+        exit();
+    } else {
+        echo "Error updating attendance: " . $conn->error;
+    }
+        }
+
+
+
         $report = [];
 
         // Initialize search variables
@@ -217,6 +252,7 @@ ob_start();  // Start output buffering
         $selected_llr_class  = isset($_POST['llr_class']) ? trim($_POST['llr_class']) : (isset($_GET['llr_class']) ? trim($_GET['llr_class']) : '');
         $selected_city  = isset($_POST['city']) ? trim($_POST['city']) : (isset($_GET['city']) ? trim($_GET['city']) : '');
         $bmds_type  = isset($_POST['bmds_type']) ? trim($_POST['bmds_type']) : (isset($_GET['bmds_type']) ? trim($_GET['bmds_type']) : '');
+        $attendance  = isset($_POST['attendance']) ? trim($_POST['attendance']) : (isset($_GET['attendance']) ? trim($_GET['attendance']) : '');
 
         // Validate allowed date types for security
         $allowed_date_types = ['policy_date', 'test_date'];
@@ -334,7 +370,7 @@ ob_start();  // Start output buffering
         }
 
         // If any filter is applied
-        if (!empty($search_query) || !empty($status) || !empty($start_date) || !empty($end_date) || !empty($selected_llr_class) || !empty($selected_city) || !empty($bmds_type)) {
+        if (!empty($search_query) || !empty($status) || !empty($start_date) || !empty($end_date) || !empty($selected_llr_class) || !empty($selected_city) || !empty($bmds_type) || !empty($attendance)) {
 
             // Convert dates to Y-m-d
             if (!empty($start_date)) {
@@ -396,6 +432,14 @@ ob_start();  // Start output buffering
                 if ($bmds_type === 'LLR' || $bmds_type === 'DL' || $bmds_type === 'ADM') {
                     $sql .= " AND bmds_type = ?";
                     $params[] = $bmds_type;
+                    $param_types .= 's';
+                }
+            }
+
+            if (!empty($attendance)) {
+                if ($attendance === 'PRESENT' || $attendance === 'ABSENT') {
+                    $sql .= " AND attendance = ?";
+                    $params[] = $attendance;
                     $param_types .= 's';
                 }
             }
@@ -500,7 +544,7 @@ ob_start();  // Start output buffering
                             SUM(CASE WHEN bmds_type = 'ADM' THEN recov_amount ELSE 0 END) as adm_recov_amount,
                             SUM(CASE WHEN bmds_type = 'ADM' THEN bal_amount ELSE 0 END) as adm_bal_amount
                         FROM `bmds_entries` 
-                        WHERE is_deleted = 0";
+                        WHERE is_deleted = 0 AND attendance = 'PRESENT' ";
             $count_params = [];
             $count_param_types = '';
 
@@ -549,6 +593,14 @@ ob_start();  // Start output buffering
                 if ($bmds_type === 'LLR' || $bmds_type === 'DL' || $bmds_type === 'ADM') {
                     $count_sql .= " AND bmds_type = ?";
                     $count_params[] = $bmds_type;
+                    $count_param_types .= 's';
+                }
+            }
+
+            if (!empty($attendance)) {
+                if ($attendance === 'PRESENT' || $attendance === 'ABSENT') {
+                    $count_sql .= " AND attendance = ?";
+                    $count_params[] = $attendance;
                     $count_param_types .= 's';
                 }
             }
@@ -872,7 +924,6 @@ ob_start();  // Start output buffering
         
      <div id="reportSection">  
         
-     <?php echo $bmds_type; ?>
       <h1>Summary :</h1>
         
 
@@ -881,7 +932,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <th>Class</th>
                     <th>Total Entry</th>
-                    <th>----------</th>
+                    <th>Code</th>
                     <th>----------</th>
                     <th>Premium Amount</th>
                     <th>Recovery Amount</th>
@@ -896,7 +947,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>1</strong></td>
                     <td><?php echo $llr_fresh_count_class1; ?></td>
-                    <td></td>
+                    <td>F1</td>
                     <td></td>
                     <td><?php echo $llr_fresh_amount_class1; ?></td>
                     <td><?php echo $llr_fresh_recov_amount_class1; ?></td>
@@ -905,7 +956,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>2</strong></td>
                     <td><?php echo $llr_fresh_count_class2; ?></td>
-                    <td></td>
+                    <td>F2</td>
                     <td></td>
                     <td><?php echo $llr_fresh_amount_class2; ?></td>
                     <td><?php echo $llr_fresh_recov_amount_class2; ?></td>
@@ -914,7 +965,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>3</strong></td>
                     <td><?php echo $llr_fresh_count_class3; ?></td>
-                    <td></td>
+                    <td>F3</td>
                     <td></td>
                     <td><?php echo $llr_fresh_amount_class3; ?></td>
                     <td><?php echo $llr_fresh_recov_amount_class3; ?></td>
@@ -926,7 +977,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>1</strong></td>
                     <td><?php echo $llr_exempted_count_class1; ?></td>
-                    <td></td>
+                    <td>E1</td>
                     <td></td>
                     <td><?php echo $llr_exempted_amount_class1; ?></td>
                     <td><?php echo $llr_exempted_recov_amount_class1; ?></td>
@@ -935,7 +986,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>2</strong></td>
                     <td><?php echo $llr_exempted_count_class2; ?></td>
-                    <td></td>
+                    <td>E2</td>
                     <td></td>
                     <td><?php echo $llr_exempted_amount_class2; ?></td>
                     <td><?php echo $llr_exempted_recov_amount_class2; ?></td>
@@ -944,7 +995,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>3</strong></td>
                     <td><?php echo $llr_exempted_count_class3; ?></td>
-                    <td></td>
+                    <td>E3</td>
                     <td></td>
                     <td><?php echo $llr_exempted_amount_class3; ?></td>
                     <td><?php echo $llr_exempted_recov_amount_class3; ?></td>
@@ -962,9 +1013,9 @@ ob_start();  // Start output buffering
                     <td><?php echo $llr_recov_amount; ?></td>
                     <td><?php echo $llr_bal_amount; ?></td>
                 </tr>
- <?php endif; ?>
+            <?php endif; ?>
         
-        <?php if ($bmds_type === '' || $bmds_type === 'DL'): ?>
+            <?php if ($bmds_type === '' || $bmds_type === 'DL'): ?>
 
                 <tr class="text-center">
                     <td colspan="7"><strong>DL FRESH</strong></td>
@@ -972,7 +1023,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>1</strong></td>
                     <td><?php echo $dl_fresh_count_class1; ?></td>
-                    <td></td>
+                    <td>F1</td>
                     <td></td>
                     <td><?php echo $dl_fresh_amount_class1; ?></td>
                     <td><?php echo $dl_fresh_recov_amount_class1; ?></td>
@@ -981,7 +1032,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>2</strong></td>
                     <td><?php echo $dl_fresh_count_class2; ?></td>
-                    <td></td>
+                    <td>F2</td>
                     <td></td>
                     <td><?php echo $dl_fresh_amount_class2; ?></td>
                     <td><?php echo $dl_fresh_recov_amount_class2; ?></td>
@@ -990,7 +1041,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>3</strong></td>
                     <td><?php echo $dl_fresh_count_class3; ?></td>
-                    <td></td>
+                    <td>F3</td>
                     <td></td>
                     <td><?php echo $dl_fresh_amount_class3; ?></td>
                     <td><?php echo $dl_fresh_recov_amount_class3; ?></td>
@@ -1002,7 +1053,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>1</strong></td>
                     <td><?php echo $dl_endst_count_class1; ?></td>
-                    <td></td>
+                    <td>E1</td>
                     <td></td>
                     <td><?php echo $dl_endst_amount_class1; ?></td>
                     <td><?php echo $dl_endst_recov_amount_class1; ?></td>
@@ -1011,7 +1062,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>2</strong></td>
                     <td><?php echo $dl_endst_count_class2; ?></td>
-                    <td></td>
+                    <td>E2</td>
                     <td></td>
                     <td><?php echo $dl_endst_amount_class2; ?></td>
                     <td><?php echo $dl_endst_recov_amount_class2; ?></td>
@@ -1020,7 +1071,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>3</strong></td>
                     <td><?php echo $dl_endst_count_class3; ?></td>
-                    <td></td>
+                    <td>E3</td>
                     <td></td>
                     <td><?php echo $dl_endst_amount_class3; ?></td>
                     <td><?php echo $dl_endst_recov_amount_class3; ?></td>
@@ -1032,7 +1083,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>1</strong></td>
                     <td><?php echo $dl_revalid_count_class1; ?></td>
-                    <td></td>
+                    <td>RE1</td>
                     <td></td>
                     <td><?php echo $dl_revalid_amount_class1; ?></td>
                     <td><?php echo $dl_revalid_recov_amount_class1; ?></td>
@@ -1041,7 +1092,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>2</strong></td>
                     <td><?php echo $dl_revalid_count_class2; ?></td>
-                    <td></td>
+                    <td>RE2</td>
                     <td></td>
                     <td><?php echo $dl_revalid_amount_class2; ?></td>
                     <td><?php echo $dl_revalid_recov_amount_class2; ?></td>
@@ -1050,7 +1101,7 @@ ob_start();  // Start output buffering
                 <tr>
                     <td><strong>3</strong></td>
                     <td><?php echo $dl_revalid_count_class3; ?></td>
-                    <td></td>
+                    <td>RE3</td>
                     <td></td>
                     <td><?php echo $dl_revalid_amount_class3; ?></td>
                     <td><?php echo $dl_revalid_recov_amount_class3; ?></td>
@@ -1070,7 +1121,7 @@ ob_start();  // Start output buffering
                 </tr>
                  <?php endif; ?>
         
-        <?php if ($bmds_type === '' || $bmds_type === 'ADM'): ?>
+            <?php if ($bmds_type === '' || $bmds_type === 'ADM'): ?>
                 <tr class="text-center">
                     <td colspan="7"><strong>ADM TOTAL</strong></td>
                 </tr>
@@ -1100,7 +1151,7 @@ ob_start();  // Start output buffering
         </table>
 
        <?php if (!empty($groupedData)): ?>
-        <?php foreach ($groupedData as $bmds_type => $entries): ?>
+    <?php foreach ($groupedData as $bmds_type => $entries): ?>
 
         <div class="text-center">
             <?php
@@ -1113,151 +1164,179 @@ ob_start();  // Start output buffering
         </div>
 
         <form method="POST" id="bulkDeleteForm">
-    <div class="float-end pb-3">
-        <button type="button" class="btn sub-btn1 mt-4 bg-danger text-light" data-bs-toggle="modal" data-bs-target="#passwordModalSelected">
-            Delete Selected
-        </button>
-    </div>
+            <div class="float-end pb-3">
+                <button type="button" class="btn sub-btn1 mt-4 bg-danger text-light" data-bs-toggle="modal" data-bs-target="#passwordModalSelected">
+                    Clear
+                </button>
+            </div>
 
-    
-
-        <table class="table table-bordered my-5">
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="selectAll"></th>
-                    <th scope="col">#</th>
-                    <th scope="col" class="action-col">Client ID</th>
-                    <th scope="col">Sr No.</th>
-                    <th scope="col" class="action-col">Date</th>
-                    <th scope="col">Client Name</th>
-                    <th scope="col">Birth Date</th>
-                    <!-- <th scope="col">Type</th> -->
-                    <th scope="col">Sub Type</th>
-                    <th scope="col">No Of Class</th>
-                    <th scope="col">Class of vehicle</th>
-                    <th scope="col">Premium</th>
-                    <th scope="col">Recovery</th>
-                    <th scope="col">Excess</th>
-                    <th scope="col" class="action-col">Status</th>
-                    <th scope="col" class="action-col">Action</th>
-                    <th scope="col" class="summary-col">__Remark__</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                $serial_number = $offset + 1; // Initialize serial number
-                foreach ($entries as $row): ?>
+        <?php if ($bmds_type === 'ADM'): ?>
+            <!-- Special table for ADM type -->
+            <table class="table table-bordered my-5">
+                <thead>
                     <tr>
-                        <td><input type="checkbox" name="selected_ids[]" value="<?= $row['id'] ?>"></td>
-                        <th scope="row"><?= $serial_number++; ?></th>
-                        <td class="action-col"> <?php echo htmlspecialchars($row['client_id']); ?></td>
-                        <td><?= htmlspecialchars($row['sr_num']); ?></td>
-                        <td class="action-col"><?= date('d-m-Y', strtotime($row['policy_date'])); ?></td>
-                        <td><?= htmlspecialchars($row['client_name']); ?></td>
-                        <td>
-                            <?php
-                                if (!empty($row['birth_date']) && $row['birth_date'] !== '0000-00-00') {
-                                echo date("d-m-Y", strtotime($row['birth_date'])) . "<br>";
-                            }
-                            ?>
-                        </td>
-                        <!-- <td>
-                            <?= htmlspecialchars($row['bmds_type']); ?> <br>
-                            
-                        </td> -->
-                        <td>
-                            <?= htmlspecialchars($row['llr_type']); ?>
-                            <?= htmlspecialchars($row['mdl_type']); ?><br>
-                        </td>
-                         <td>
-                            <?= htmlspecialchars($row['class']); ?> <br>
-                            
-                        </td>
-                        <!-- <td>
-
-                            <?php
-                            // Show test date if it's not empty and not '0000-00-00'
-                            if (!empty($row['test_date']) && $row['test_date'] !== '0000-00-00') {
-                                echo date("d-m-Y", strtotime($row['test_date'])) . "<br>";
-                            }
-
-                            // Show start and end date range if both are valid
-                            if (!empty($row['start_date']) && $row['start_date'] !== '0000-00-00' &&
-                                !empty($row['end_date']) && $row['end_date'] !== '0000-00-00') {
-                                echo date("d-m-Y", strtotime($row['start_date'])) . " To " . date("d-m-Y", strtotime($row['end_date'])) . "<br>";
-                            }
-
-                            // Show start and end time if both are valid
-                            if (!empty($row['start_time']) && $row['start_time'] !== '00:00:00' &&
-                                !empty($row['end_time']) && $row['end_time'] !== '00:00:00') {
-                                echo date("g:i A", strtotime($row['start_time'])) . " To " . date("g:i A", strtotime($row['end_time']));
-                            }
-                            ?>
-
-                            <?= htmlspecialchars($row['city']); ?>
-
-                        </td> -->
-
-                        <td>
-                            <?= htmlspecialchars($row['llr_class']); ?>
-                            <?= htmlspecialchars($row['car_type']); ?>
-                        </td>
-
-                        <td>
-                            <?= htmlspecialchars($row['amount']); ?><br>
-                        </td>
-
-                        <td><?= htmlspecialchars($row['recov_amount']); ?></td>
-                        <td><?= htmlspecialchars($row['bal_amount']); ?></td>
-                        <td class="summary-col"></td>
-
-                        <!-- <td>
-                            <?php
-                                if (!empty($row['start_date']) && $row['start_date'] !== '0000-00-00' && !empty($row['end_date']) && $row['end_date'] !== '0000-00-00') {
-                                    echo date("d-m-Y", strtotime($row['start_date'])) . " To " . date("d-m-Y", strtotime($row['end_date']));
-                                } else {
-                                    echo "-";
-                                }
-                            ?>
-                        </td>
-                        <td>
-                            <?php
-                                $start = $row['start_time'];
-                                $end = $row['end_time'];
-                                if (!empty($start) && !empty($end) && $start !== '00:00:00' && $end !== '00:00:00') {
-                                    echo date("g:i A", strtotime($start)) . " To " . date("g:i A", strtotime($end));
-                                } else {
-                                    echo "-";
-                                }
-                            ?>
-                        </td> -->
-
-                        <!-- <td><?= htmlspecialchars($row['contact']); ?></td> -->
-                         
-                        <td class="action-col"><?= htmlspecialchars($row['form_status']); ?></td>
-                        <td class="action-col">
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') : ?>
-                                <a href="bmds-form.php?action=edit&id=<?= $row['id']; ?>" class="text-decoration-none text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a> 
-                                
-                                &nbsp;/&nbsp;
-                                
-                                <a class="text-decoration-none text-dark" data-bs-toggle="modal" data-bs-target="#passwordModal" data-item-id="<?= $row['id']; ?>">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
-                            <?php endif; ?>
-                        </td>
-                        <td class="action-col">
-                            <a href="bmds-form.php?action=add_new&id=<?php echo $row['id']; ?>" class="btn sub-btn1 text-dark" >
-                                Upgrade
-                            </a>
-                        </td>
+                        <th><input type="checkbox" id="selectAll"></th>
+                        <th scope="col">#</th>
+                        <th scope="col">Sr No.</th>
+                        <th scope="col" class="action-col">Date</th>
+                        <th scope="col">Client Name</th>
+                        <th scope="col">Birth Date</th>
+                        <th scope="col">Class of vehicle</th>
+                        <th scope="col">Premium</th>
+                        <th scope="col">Recovery</th>
+                        <th scope="col">Excess</th>
+                        <th scope="col" class="action-col">Status</th>
+                        <th scope="col" class="action-col">Action</th>
+                        <th scope="col" class="summary-col">__Remark__</th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-                            </form>
+                </thead>
+                <tbody>
+                    <?php 
+                    $serial_number = $offset + 1; // Initialize serial number
+                    foreach ($entries as $row): ?>
+                        <tr>
+                            <td><input type="checkbox" name="selected_ids[]" value="<?= $row['id'] ?>"></td>
+                            <th scope="row"><?= $serial_number++; ?></th>
+                            <td><?= htmlspecialchars($row['sr_num']); ?></td>
+                            <td class="action-col"><?= date('d-m-Y', strtotime($row['policy_date'])); ?></td>
+                            <td><?= htmlspecialchars($row['client_name']); ?></td>
+                            <td>
+                                <?php
+                                    if (!empty($row['birth_date']) && $row['birth_date'] !== '0000-00-00') {
+                                    echo date("d-m-Y", strtotime($row['birth_date'])) . "<br>";
+                                }
+                                ?>
+                            </td>
+                            
+                            <td>
+                                <?= htmlspecialchars($row['car_type']); ?>
+                            </td>
+                            <td>
+                                <?= htmlspecialchars($row['amount']); ?><br>
+                            </td>
+                            <td><?= htmlspecialchars($row['recov_amount']); ?></td>
+                            <td><?= htmlspecialchars($row['bal_amount']); ?></td>
+                            <td class="summary-col"></td>
+                            <td class="action-col"><?= htmlspecialchars($row['form_status']); ?></td>
+                            <td class="action-col">
+                                <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') : ?>
+                                    <a href="bmds-form.php?action=edit&id=<?= $row['id']; ?>" class="text-decoration-none text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a> 
+                                    
+                                    &nbsp;/&nbsp;
+                                    
+                                    <a class="text-decoration-none text-dark" data-bs-toggle="modal" data-bs-target="#passwordModal" data-item-id="<?= $row['id']; ?>">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
+                            <td class="action-col">
+                                <a href="bmds-form.php?action=add_new&id=<?php echo $row['id']; ?>" class="btn sub-btn1 text-dark" >
+                                    Upgrade
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+        <?php else: ?>
+            <!-- Default table for other types -->
+            <table class="table table-bordered my-5">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
+                        <th scope="col">#</th>
+                        <th scope="col">Sr No.</th>
+                        <th scope="col" class="action-col">Date</th>
+                        <th scope="col">Client Name</th>
+                        <th scope="col">Birth Date</th>
+                        <th scope="col">Sub Type</th>
+                        <th scope="col">No Of Class</th>
+                        <th scope="col">Class of vehicle</th>
+                        <th scope="col">Premium</th>
+                        <th scope="col">Recovery</th>
+                        <th scope="col">Excess</th>
+                        <th scope="col" class="action-col">Status</th>
+                        <th scope="col" class="action-col">Action</th>
+                        <th scope="col" class="action-col">Attendance</th>
+                        <th scope="col" class="summary-col">__Remark__</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $serial_number = $offset + 1; // Initialize serial number
+                    foreach ($entries as $row): ?>
+                        <tr>
+                            <td><input type="checkbox" name="selected_ids[]" value="<?= $row['id'] ?>"></td>
+                            <th scope="row"><?= $serial_number++; ?></th>
+                            <td><?= htmlspecialchars($row['sr_num']); ?></td>
+                            <td class="action-col"><?= date('d-m-Y', strtotime($row['policy_date'])); ?></td>
+                            <td><?= htmlspecialchars($row['client_name']); ?></td>
+                            <td>
+                                <?php
+                                    if (!empty($row['birth_date']) && $row['birth_date'] !== '0000-00-00') {
+                                    echo date("d-m-Y", strtotime($row['birth_date'])) . "<br>";
+                                }
+                                ?>
+                            </td>
+                            <td>
+                                <?= htmlspecialchars($row['llr_type']); ?>
+                                <?= htmlspecialchars($row['mdl_type']); ?><br>
+                            </td>
+                            <td>
+                                <?= htmlspecialchars($row['class']); ?> <br>
+                            </td>
+                            <td>
+                                <?= htmlspecialchars($row['llr_class']); ?>
+                                <?= htmlspecialchars($row['car_type']); ?>
+                            </td>
+                            <td>
+                                <?= htmlspecialchars($row['amount']); ?><br>
+                            </td>
+                            <td><?= htmlspecialchars($row['recov_amount']); ?></td>
+                            <td><?= htmlspecialchars($row['bal_amount']); ?></td>
+                            <td class="summary-col"></td>
+                            <td class="action-col"><?= htmlspecialchars($row['form_status']); ?></td>
+                            <td class="action-col">
+                                <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') : ?>
+                                    <a href="bmds-form.php?action=edit&id=<?= $row['id']; ?>" class="text-decoration-none text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a> 
+                                    
+                                    &nbsp;/&nbsp;
+                                    
+                                    <a class="text-decoration-none text-dark" data-bs-toggle="modal" data-bs-target="#passwordModal" data-item-id="<?= $row['id']; ?>">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
+                            <td class="action-col">
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                    <input type="hidden" name="attendance" 
+                                        value="<?= $row['attendance'] == 'PRESENT' ? 'ABSENT' : 'PRESENT' ?>">
+                                    
+                                    <button type="submit" name="update_attendance" 
+                                            class="btn btn-sm mt-1 <?= $row['attendance'] == 'PRESENT' ? 'btn-success' : 'btn-danger' ?>">
+                                        <?= $row['attendance'] == 'PRESENT' ? 'PRESENT' : 'ABSENT' ?>
+                                    </button>
+                                </form>
+                            </td>
+
+                            <td class="action-col">
+                                <a href="bmds-form.php?action=add_new&id=<?php echo $row['id']; ?>" class="btn sub-btn1 text-dark" >
+                                    Upgrade
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+
+        </form>
     <?php endforeach; ?>
 <?php else: ?>
     <p>No records found for today.</p>
@@ -1404,7 +1483,7 @@ ob_start();  // Start output buffering
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="submitBulkDelete()">Verify & Delete</button>
+                <button type="button" class="btn btn-danger" onclick="submitBulkDelete()">Verify & Clear</button>
             </div>
         </div>
     </div>

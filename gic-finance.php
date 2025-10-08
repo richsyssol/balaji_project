@@ -18,6 +18,13 @@ include 'includes/db_conn.php';
 // Initialize search query to prevent warnings
 $search_query = isset($_POST['search_query']) ? $_POST['search_query'] : '';
 
+// Function to split search query by comma
+function prepareSearchTerms($input) {
+    // Split by comma and remove empty entries
+    $terms = array_map('trim', explode(',', $input));
+    return array_filter($terms);
+}
+
 // Fetch unique company names from the database
 $companyQuery = "SELECT DISTINCT policy_company FROM gic_entries WHERE policy_company IS NOT NULL AND policy_company != '' ORDER BY policy_company";
 $companyResult = $conn->query($companyQuery);
@@ -46,6 +53,8 @@ $sub_type = $_POST['sub_type'] ?? '';
 $nonmotor_subtype_select = $_POST['nonmotor_subtype_select'] ?? '';
 $start_search_date = $_POST['start_search_date'] ?? '';
 $end_search_date = $_POST['end_search_date'] ?? '';
+$start_date_formatted = $_POST['start_date_formatted '] ?? '';
+$end_date_formatted = $_POST['end_date_formatted '] ?? '';
 
 // Initialize variables for totals
 $total_entries = 0;
@@ -116,6 +125,33 @@ if ($start_search_date && $end_search_date) {
     $start_date_formatted = date('Y-m-d', strtotime($start_search_date));
     $end_date_formatted = date('Y-m-d', strtotime($end_search_date));
     
+    // Build search conditions for multi-term search
+    $search_conditions = "";
+    $search_params = [];
+    $search_types = "";
+    
+    if (!empty($search_query)) {
+        $search_terms = prepareSearchTerms($search_query);
+        
+        if (!empty($search_terms)) {
+            $search_conditions = " AND (";
+            $term_conditions = [];
+            
+            foreach ($search_terms as $term) {
+                // For each search term, match against multiple fields
+                $term_conditions[] = "(client_name LIKE ? OR contact LIKE ? OR policy_number LIKE ? OR contact_alt LIKE ? OR adviser_name LIKE ?)";
+                
+                // Add parameters for each field (5 parameters per term)
+                for ($i = 0; $i < 5; $i++) {
+                    $search_params[] = '%' . $term . '%';
+                    $search_types .= 's';
+                }
+            }
+            
+            $search_conditions .= implode(' OR ', $term_conditions) . ")";
+        }
+    }
+    
     // Main query to fetch policy entries and amounts
     $query = "
         SELECT 
@@ -159,7 +195,7 @@ if ($start_search_date && $end_search_date) {
             ($vehicle_type ? " AND vehicle_type = ?" : "") .
             ($sub_type ? " AND sub_type = ?" : "") .
             ($nonmotor_subtype_select ? " AND nonmotor_subtype_select = ?" : "") .
-            ($search_query ? " AND (client_name LIKE ? OR contact LIKE ? OR policy_number LIKE ?)" : "") . "
+            $search_conditions . "
         GROUP BY 
             policy_company, policy_type, vehicle_type, sub_type, nonmotor_subtype_select
     ";
@@ -170,6 +206,10 @@ if ($start_search_date && $end_search_date) {
     if ($stmt === false) {
         die("Error preparing query: " . $conn->error);
     }
+    
+    // Build parameters array
+    $params = [];
+    $types = '';
     
     if ($isExpiryReport) {
         // For expiry reports with multi-year policy support
@@ -193,12 +233,11 @@ if ($start_search_date && $end_search_date) {
     if ($vehicle_type) { $params[] = $vehicle_type; $types .= 's'; }
     if ($sub_type) { $params[] = $sub_type; $types .= 's'; }
     if ($nonmotor_subtype_select) { $params[] = $nonmotor_subtype_select; $types .= 's'; }
-    if ($search_query) {
-        $search_term = "%$search_query%";
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $types .= 'sss';
+    
+    // Add search parameters if search query exists
+    if (!empty($search_query) && !empty($search_terms)) {
+        $params = array_merge($params, $search_params);
+        $types .= $search_types;
     }
 
     $stmt->bind_param($types, ...$params);
@@ -218,6 +257,33 @@ if ($start_search_date && $end_search_date) {
     }
 
     $stmt->close();
+}
+
+// Build search conditions for client query
+$client_search_conditions = "";
+$client_search_params = [];
+$client_search_types = "";
+
+if (!empty($search_query)) {
+    $search_terms = prepareSearchTerms($search_query);
+    
+    if (!empty($search_terms)) {
+        $client_search_conditions = " AND (";
+        $term_conditions = [];
+        
+        foreach ($search_terms as $term) {
+            // For each search term, match against multiple fields
+            $term_conditions[] = "(client_name LIKE ? OR contact LIKE ? OR policy_number LIKE ? OR contact_alt LIKE ? OR adviser_name LIKE ?)";
+            
+            // Add parameters for each field (5 parameters per term)
+            for ($i = 0; $i < 5; $i++) {
+                $client_search_params[] = '%' . $term . '%';
+                $client_search_types .= 's';
+            }
+        }
+        
+        $client_search_conditions .= implode(' OR ', $term_conditions) . ")";
+    }
 }
 
 // Fetch client details with dynamic ORDER BY
@@ -274,7 +340,7 @@ $clientQuery = "
         ($vehicle_type ? " AND vehicle_type = ?" : "") .
         ($sub_type ? " AND sub_type = ?" : "") .
         ($nonmotor_subtype_select ? " AND nonmotor_subtype_select = ?" : "") .
-        ($search_query ? " AND (client_name LIKE ? OR contact LIKE ? OR policy_number LIKE ?)" : "") . "
+        $client_search_conditions . "
     $orderByClause
 ";
 
@@ -284,10 +350,14 @@ $stmt = $conn->prepare($clientQuery);
 if ($stmt === false) {
     die("Error preparing client query: " . $conn->error);
 }
+         
+// Build parameters array for client query
+$client_params = [];
+$client_types = "";
 
 if ($isExpiryReport) {
     // For expiry reports with multi-year policy support
-    $params = [
+    $client_params = [
         $start_date_formatted, $end_date_formatted, // For normal policies
         $start_date_formatted, $end_date_formatted, // For final year of long-term policies
         $end_date_formatted,   // YEAR(end_date) - year_count + 1 <= YEAR(?)
@@ -295,27 +365,26 @@ if ($isExpiryReport) {
         $end_date_formatted,   // For virtual date construction
         $start_date_formatted, $end_date_formatted  // Virtual date BETWEEN
     ];
-    $types = 'sssssssss'; // 9 string parameters
+    $client_types = 'sssssssss'; // 9 string parameters
 } else {
     // For regular reports based on policy application date
-    $params = [$start_date_formatted, $end_date_formatted];
-    $types = 'ss';
+    $client_params = [$start_date_formatted, $end_date_formatted];
+    $client_types = 'ss';
 }
 
-if ($policy_company) { $params[] = $policy_company; $types .= 's'; }
-if ($policy_type) { $params[] = $policy_type; $types .= 's'; }
-if ($vehicle_type) { $params[] = $vehicle_type; $types .= 's'; }
-if ($sub_type) { $params[] = $sub_type; $types .= 's'; }
-if ($nonmotor_subtype_select) { $params[] = $nonmotor_subtype_select; $types .= 's'; }
-if ($search_query) {
-    $search_term = "%$search_query%";
-    $params[] = $search_term;
-    $params[] = $search_term;
-    $params[] = $search_term;
-    $types .= 'sss';
+if ($policy_company) { $client_params[] = $policy_company; $client_types .= 's'; }
+if ($policy_type) { $client_params[] = $policy_type; $client_types .= 's'; }
+if ($vehicle_type) { $client_params[] = $vehicle_type; $client_types .= 's'; }
+if ($sub_type) { $client_params[] = $sub_type; $client_types .= 's'; }
+if ($nonmotor_subtype_select) { $client_params[] = $nonmotor_subtype_select; $client_types .= 's'; }
+
+// Add search parameters if search query exists
+if (!empty($search_query) && !empty($search_terms)) {
+    $client_params = array_merge($client_params, $client_search_params);
+    $client_types .= $client_search_types;
 }
 
-$stmt->bind_param($types, ...$params);
+$stmt->bind_param($client_types, ...$client_params);
 $stmt->execute();
 $clientResult = $stmt->get_result();
 $clientDetails = $clientResult->fetch_all(MYSQLI_ASSOC);
@@ -525,7 +594,7 @@ if (isset($_POST['download_pdf'])) {
             <div class="row">
                 
                 <div class="col-md-3 field">
-                    <label for="search_query" class="form-label">Search :</label>
+                    <label for="search_query" class="form-label">Search (Use Comma For Multi-Search) :</label>
                     <input type="text" name="search_query" class="form-control" value="<?= htmlspecialchars($search_query) ?>" placeholder="Name, Contact" />
                 </div>
 
@@ -772,7 +841,11 @@ if (isset($_POST['download_pdf'])) {
                         echo "Total Recovery Amount: <strong>" . $total_recov_amount . "</strong><br>";
                     ?>
                 <hr>  
-            
+
+                <!-- Note -->
+                <div class="summary-col pt-5">
+                    <p><strong>Note : </strong>This is computer generated report. Kindly refer original documents for more information and verification.</p>
+                </div>
             </div>
 
         <?php else: ?>

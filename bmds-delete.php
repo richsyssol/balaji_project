@@ -57,7 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($_SESSION['itemId']); // Clear session
 
         // Perform soft delete by setting deleted_at
-        $query = "UPDATE bmds_entries SET deleted_at = NOW(), is_deleted = 1 WHERE id = ?";
+        $query = "UPDATE bmds_entries 
+                        SET 
+                            amount = 0,
+                            adv_amount = 0,
+                            bal_amount = 0,
+                            recov_amount = 0
+                        WHERE id = ?";
 
         $stmt = $conn->prepare($query);
         $stmt->bind_param('i', $itemId);

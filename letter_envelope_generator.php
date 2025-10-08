@@ -17,19 +17,20 @@ $recipient_address = '';
 $subject = '';
 $message = '';
 $referance = '';
-$textmsg = '';
 $errors = [];
 $is_edit = false;
 $id = null;
-$add_client = false; // Avoid undefined variable
-
 
 // Check if it's an edit operation
 if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $is_edit = true;
 
-    $result = $conn->query("SELECT * FROM letters WHERE id=$id");
+    $stmt = $conn->prepare("SELECT * FROM letters WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $sender_name = $row['sender_name'];
@@ -39,10 +40,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
         $subject = $row['subject'];
         $message = $row['message'];
         $referance = $row['referance'];
-        $textmsg = $row['textmsg'];
     } else {
         die("Letter not found.");
     }
+    $stmt->close();
 }
 
 // Handle form submission
@@ -58,53 +59,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subject = trim($_POST['subject']);
     $message = isset($_POST['message']) ? trim($_POST['message']) : '';
     $referance = isset($_POST['referance']) ? trim($_POST['referance']) : '';
-    $textmsg = isset($_POST['textmsg']) ? trim($_POST['textmsg']) : '';
 
-    // Validation
-    $pattern = "/^[\s\S]*$/";
-    if (empty($sender_name) || !preg_match($pattern, $sender_name)) $errors[] = "Invalid sender name";
-    if (empty($sender_address) || !preg_match($pattern, $sender_address)) $errors[] = "Invalid sender address";
-    if (empty($recipient_name) || !preg_match($pattern, $recipient_name)) $errors[] = "Invalid recipient name";
-    if (empty($recipient_address) || !preg_match($pattern, $recipient_address)) $errors[] = "Invalid recipient address";
-    if (empty($subject) || !preg_match($pattern, $subject)) $errors[] = "Invalid subject";
-    if (empty($message) || !preg_match($pattern, $message)) $errors[] = "Invalid message";
-    // if (empty($referance) || !preg_match($pattern, $referance)) $errors[] = "Invalid referance";
-    // if (empty($textmsg) || !preg_match($pattern, $textmsg)) $errors[] = "Invalid textmsg";
+    // Validation - Allow all characters including special characters, numbers, and text
+    // Minimum 1 character required, allow everything except potentially dangerous characters for your context
+    $pattern = "/^[\s\S]{1,}$/"; // Allows any character including newlines, at least 1 character
+    
+    if (empty($sender_name) || !preg_match($pattern, $sender_name)) $errors[] = "Sender name is required";
+    if (empty($sender_address) || !preg_match($pattern, $sender_address)) $errors[] = "Sender address is required";
+    if (empty($recipient_name) || !preg_match($pattern, $recipient_name)) $errors[] = "Recipient name is required";
+    if (empty($recipient_address) || !preg_match($pattern, $recipient_address)) $errors[] = "Recipient address is required";
+    if (empty($subject) || !preg_match($pattern, $subject)) $errors[] = "Subject is required";
+    if (empty($message) || !preg_match($pattern, $message)) $errors[] = "Message is required";
+    if (empty($referance) || !preg_match($pattern, $referance)) $errors[] = "Reference is required";
 
     // Process if no errors
     if (empty($errors)) {
         if ($is_edit) {
-            $sql = "UPDATE letters SET 
-                        sender_name='$sender_name', 
-                        sender_address='$sender_address', 
-                        recipient_name='$recipient_name',
-                        recipient_address='$recipient_address', 
-                        subject='$subject', 
-                        message='$message', 
-                        referance='$referance', 
-                        textmsg='$textmsg' 
-                    WHERE id=$id";
-            if ($conn->query($sql) === TRUE) {
+            // Use prepared statements for update
+            $stmt = $conn->prepare("UPDATE letters SET 
+                        sender_name = ?, 
+                        sender_address = ?, 
+                        recipient_name = ?,
+                        recipient_address = ?, 
+                        subject = ?, 
+                        message = ?, 
+                        referance = ?
+                    WHERE id = ?");
+            $stmt->bind_param("sssssssi", 
+                $sender_name, $sender_address, $recipient_name, 
+                $recipient_address, $subject, $message, 
+                $referance, $id
+            );
+            
+            if ($stmt->execute()) {
                 header("Location: letter");
                 exit();
             } else {
-                echo "Error updating record: " . $conn->error;
+                echo "Error updating record: " . $stmt->error;
             }
+            $stmt->close();
         } else {
-            $sql = "INSERT INTO letters 
-                        (sender_name, sender_address, recipient_name, recipient_address, subject, message,referance, textmsg) 
+            // Use prepared statements for insert
+            $stmt = $conn->prepare("INSERT INTO letters 
+                        (sender_name, sender_address, recipient_name, recipient_address, subject, message, referance) 
                     VALUES 
-                        ('$sender_name', '$sender_address', '$recipient_name', '$recipient_address', '$subject', '$message', '$referance', '$textmsg')";
-            if ($conn->query($sql) === TRUE) {
+                        (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssssss", 
+                $sender_name, $sender_address, $recipient_name, 
+                $recipient_address, $subject, $message, 
+                $referance
+            );
+            
+            if ($stmt->execute()) {
                 header("Location: letter");
                 exit();
             } else {
-                echo "Error: " . $conn->error;
+                echo "Error: " . $stmt->error;
             }
+            $stmt->close();
         }
     }
 }
-
 ?>
 
 
@@ -128,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form 
                 action="letter_envelope_generator.php<?php 
                     if ($is_edit) echo '?action=edit&id=' . $id; 
-                    elseif ($add_client) echo '?action=add_client&id=' . $id; 
+                    // elseif ($add_client) echo '?action=add_client&id=' . $id; 
                 ?>" 
                 method="POST" class="p-5 shadow bg-white">
 
@@ -180,10 +195,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3 field">
                     <label class="form-label">Message</label>
                     <textarea name="message" class="form-control" rows="4" required><?= htmlspecialchars($message); ?></textarea>
-                </div>
-                <div class="mb-3 field">
-                    <label class="form-label">Text</label>
-                    <textarea name="textmsg" class="form-control" rows="4" ><?= htmlspecialchars($textmsg); ?></textarea>
                 </div>
 
                 <input type="submit" class="btn sub-btn" value="<?= $is_edit ? 'Update Entry' : 'Add Entry'; ?>">

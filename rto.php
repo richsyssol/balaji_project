@@ -801,13 +801,16 @@ include 'session_check.php';
                                 <?php echo htmlspecialchars($row['tr_type_work']); ?>
                                 <?php echo htmlspecialchars($row['nt_type_work']); ?>
                             </td>
-                            <td><?php echo ($row['amount'] ?? 0) == 0 ? '' : htmlspecialchars($row['amount']); ?></td>
-                            <td><?php echo ($row['adv_amount'] ?? 0) == 0 ? '' : htmlspecialchars($row['adv_amount']); ?></td>
-                            <td><?php echo ($row['recov_amount'] ?? 0) == 0 ? '' : htmlspecialchars($row['recov_amount']); ?></td>
-                            <td><?php echo ($row['gov_amount'] ?? 0) == 0 ? '' : htmlspecialchars($row['gov_amount']); ?></td>
-                            <td><?php echo ($row['other_amount'] ?? 0) == 0 ? '' : htmlspecialchars($row['other_amount']); ?></td>
-                            <td><?php echo ($row['expenses'] ?? 0) == 0 ? '' : htmlspecialchars($row['expenses']); ?></td>
-                            <td><?php echo ($row['net_amt'] ?? 0) == 0 ? '' : htmlspecialchars($row['net_amt']); ?></td>
+                            <td><?php echo htmlspecialchars($row['amount']); ?></td>
+                            <td><?php echo htmlspecialchars($row['adv_amount']); ?></td>
+                            <td><?php echo htmlspecialchars($row['recov_amount']); ?></td>
+                            <td><?php echo htmlspecialchars($row['gov_amount']); ?></td>
+                            <td><?php echo htmlspecialchars($row['other_amount']); ?></td>
+                            <td><?php echo htmlspecialchars($row['expenses']); ?></td>
+                            <td>
+                                <?php //echo ($row['net_amt'] ?? 0) == 0 ? '' : htmlspecialchars($row['net_amt']); ?>
+                                <?php echo htmlspecialchars($row['net_amt']); ?>
+                        </td>
                             <td><?php echo htmlspecialchars($row['adviser_name']); ?></td>
                             <td><?php echo htmlspecialchars($row['remark']); ?></td>
                             <td><?php echo htmlspecialchars($row['form_status']); ?></td>

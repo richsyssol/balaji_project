@@ -1162,7 +1162,7 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
 
 <div class="row g-3 mb-3">
     <!-- Policy Duration -->
-    <div class="col-md-2 field">
+    <div class="col-md-4 field">
         <label for="policyDuration" class="form-label">Select Policy Duration</label>
         <select class="form-select" name="policy_duration" id="policyDuration" onchange="updateDates()">
             <option value="1yr" <?php echo ($is_edit && $policy_duration == '1YR') || ($add_new && $policy_company == '1YR') ? 'selected' : ''; ?>>1 Year</option>
@@ -1172,34 +1172,60 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
     </div>
 
     <!-- Start Date -->
-    <div class="col-md-3 field">
+    <div class="col-md-4 field">
         <label for="startDate" class="form-label">Start Date</label>
         <input type="date" name="start_date" value="<?php 
             if ($is_edit) {
                 echo htmlspecialchars($start_date);
             } elseif ($add_new) {
-                $today = new DateTime();
-                $nextStartDate = $today->format('Y-m-d');
-                if (!empty($end_date)) {
-                    $endDateObj = DateTime::createFromFormat('Y-m-d', $end_date);
-                    if ($endDateObj && $endDateObj >= $today) {
-                        $endDateObj->modify('-1 day');
-                        $nextStartDate = $endDateObj->format('Y-m-d');
+                // Get the next date from the last entry's end_date
+                $nextStartDate = date('Y-m-d'); // Default to today
+                
+                // Fetch the last entry's end_date from the database
+                $original_id = $_GET['id'] ?? 0;
+                if ($original_id) {
+                    $result = $conn->query("SELECT end_date FROM gic_entries WHERE id = '$original_id'");
+                    if ($result->num_rows > 0) {
+                        $row = $result->fetch_assoc();
+                        $last_end_date = $row['end_date'];
+                        
+                        if (!empty($last_end_date)) {
+                            // Calculate next day after last end_date
+                            $nextStartDate = date('Y-m-d', strtotime($last_end_date . ' +1 day'));
+                            
+                            // Ensure the calculated date is not in the past
+                            $today = date('Y-m-d');
+                            if ($nextStartDate < $today) {
+                                $nextStartDate = $today;
+                            }
+                        }
                     }
                 }
                 echo htmlspecialchars($nextStartDate);
             }
-        ?>" class="form-control text-primary" id="startDate" onchange="adjustEndDate()" >
+        ?>" class="form-control text-primary" id="startDate" onchange="adjustEndDate()">
     </div>
 
     <!-- End Date -->
-    <div class="col-md-3 field">
+    <div class="col-md-4 field">
         <label for="endDate" class="form-label">End Date</label>
         <input type="date" name="end_date" value="<?php 
             if ($is_edit) {
                 echo htmlspecialchars($end_date);
             } elseif ($add_new) {
-                echo htmlspecialchars($end_date);
+                // Calculate end_date based on the new start_date
+                $nextEndDate = '';
+                if (isset($nextStartDate) && !empty($nextStartDate)) {
+                    $startDateObj = new DateTime($nextStartDate);
+                    $policyDuration = $_POST['policy_duration'] ?? '1yr'; // Default to 1 year
+                    
+                    if ($policyDuration === '1yr') {
+                        $startDateObj->modify('+1 year -1 day');
+                        $nextEndDate = $startDateObj->format('Y-m-d');
+                    }
+                    // For other durations, you might want to handle differently
+                }
+                echo htmlspecialchars($nextEndDate);
             }
         ?>" class="form-control text-primary" id="endDate">
     </div>
@@ -1225,15 +1251,14 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
         <div class="row g-3 ">
                          
                 
-                
                 <!-- Payment Mode -->
                 <div class="col-md-12 field">
                     <label for="paymentMode" class="form-label">Payment Mode</label>
                     <select class="form-select" name="pay_mode" id="paymentMode">
-                        <option value="Cash" <?php if ($is_edit && $pay_mode == 'Cash') echo 'selected'; ?>>Cash</option>
-                        <option value="Cheque" <?php if ($is_edit && $pay_mode == 'CHEQUE') echo 'selected'; ?>>Cheque</option>
-                        <option value="Payment Link" <?php if ($is_edit && $pay_mode == 'Payment Link') echo 'selected'; ?>>Payment Link</option>
-                        <option value="Online" <?php if ($is_edit && $pay_mode == 'Online') echo 'selected'; ?>>Online</option>
+                        <option value="CASH" <?php if ($is_edit && $pay_mode == 'CASH') echo 'selected'; ?>>CASH</option>
+                        <option value="CHEQUE" <?php if ($is_edit && $pay_mode == 'CHEQUE') echo 'selected'; ?>>CHEQUE</option>
+                        <option value="PAYMENT LINK" <?php if ($is_edit && $pay_mode == 'PAYMENT LINK') echo 'selected'; ?>>PAYMENT LINK</option>
+                        <option value="ONLINE" <?php if ($is_edit && $pay_mode == 'ONLINE') echo 'selected'; ?>>ONLINE</option>
                         <option value="RTGS/NEFT" <?php if ($is_edit && $pay_mode == 'RTGS/NEFT') echo 'selected'; ?>>RTGS/NEFT</option>
                     </select>
                 </div>
@@ -1383,31 +1408,29 @@ function updateDates() {
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
 
-    const today = new Date();
-    const todayFormatted = today.toISOString().split('T')[0];
-
-    if (!startDateInput.value) {
+    // If start date is empty and we're in add_new mode, keep the PHP calculated date
+    if (!startDateInput.value && <?php echo $add_new ? 'true' : 'false'; ?>) {
+        // The start date is already set by PHP, just calculate end date
+        calculateEndDateBasedOnStart();
+    } else if (!startDateInput.value) {
+        // For other cases, set to today
+        const today = new Date();
+        const todayFormatted = today.toISOString().split('T')[0];
         startDateInput.value = todayFormatted;
-    }
-
-    if (duration === '1yr') {
-        const startDate = new Date(startDateInput.value);
-        const endDate = new Date(startDate);
-        endDate.setFullYear(startDate.getFullYear() + 1);
-        endDate.setDate(endDate.getDate() - 1); // subtract 1 day to get one day before anniversary
-        endDateInput.value = endDate.toISOString().split('T')[0];
-        endDateInput.disabled = false;
+        calculateEndDateBasedOnStart();
     } else {
-        endDateInput.disabled = false;
+        calculateEndDateBasedOnStart();
     }
 
     calculateAndDisplayDuration();
 }
 
-function adjustEndDate() {
+function calculateEndDateBasedOnStart() {
     const duration = document.getElementById('policyDuration').value;
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
+
+    if (!startDateInput.value) return;
 
     if (duration === '1yr') {
         const startDate = new Date(startDateInput.value);
@@ -1416,10 +1439,15 @@ function adjustEndDate() {
         endDate.setDate(endDate.getDate() - 1); // 1 day before anniversary
         endDateInput.value = endDate.toISOString().split('T')[0];
     }
+    // For other durations, you can add similar logic
+}
 
+function adjustEndDate() {
+    calculateEndDateBasedOnStart();
     calculateAndDisplayDuration();
 }
 
+// Rest of the existing JavaScript functions remain the same...
 function calculateAndDisplayDuration() {
     const startDateVal = document.getElementById('startDate').value;
     const endDateVal = document.getElementById('endDate').value;

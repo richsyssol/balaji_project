@@ -47,247 +47,328 @@ $bill_date = isset($bill_data['bill_date']) ? $bill_data['bill_date'] : $bill['b
 function formatCurrency($amount) {
     return number_format($amount, 2, '.', ',');
 }
+
+
+function convertNumberToWords($number) {
+    $hyphen      = '-';
+    $conjunction = ' and ';
+    $separator   = ', ';
+    $negative    = 'negative ';
+    $decimal     = ' point ';
+    $dictionary  = [
+        0                   => 'Zero',
+        1                   => 'One',
+        2                   => 'Two',
+        3                   => 'Three',
+        4                   => 'Four',
+        5                   => 'Five',
+        6                   => 'Six',
+        7                   => 'Seven',
+        8                   => 'Eight',
+        9                   => 'Nine',
+        10                  => 'Ten',
+        11                  => 'Eleven',
+        12                  => 'Twelve',
+        13                  => 'Thirteen',
+        14                  => 'Fourteen',
+        15                  => 'Fifteen',
+        16                  => 'Sixteen',
+        17                  => 'Seventeen',
+        18                  => 'Eighteen',
+        19                  => 'Nineteen',
+        20                  => 'Twenty',
+        30                  => 'Thirty',
+        40                  => 'Forty',
+        50                  => 'Fifty',
+        60                  => 'Sixty',
+        70                  => 'Seventy',
+        80                  => 'Eighty',
+        90                  => 'Ninety',
+        100                 => 'Hundred',
+        1000                => 'Thousand',
+        100000              => 'Lakh',
+        10000000            => 'Crore'
+    ];
+
+    if (!is_numeric($number)) {
+        return false;
+    }
+
+    if (($number >= 0 && (int)$number < 0) || (int)$number < 0 - PHP_INT_MAX) {
+        // overflow
+        trigger_error(
+            'convertNumberToWords only accepts numbers between -' . PHP_INT_MAX . ' and ' . PHP_INT_MAX,
+            E_USER_WARNING
+        );
+        return false;
+    }
+
+    if ($number < 0) {
+        return $negative . convertNumberToWords(abs($number));
+    }
+
+    $string = $fraction = null;
+
+    if (strpos($number, '.') !== false) {
+        list($number, $fraction) = explode('.', $number);
+    }
+
+    switch (true) {
+        case $number < 21:
+            $string = $dictionary[$number];
+            break;
+        case $number < 100:
+            $tens   = ((int)($number / 10)) * 10;
+            $units  = $number % 10;
+            $string = $dictionary[$tens];
+            if ($units) {
+                $string .= $hyphen . $dictionary[$units];
+            }
+            break;
+        case $number < 1000:
+            $hundreds  = (int)($number / 100);
+            $remainder = $number % 100;
+            $string = $dictionary[$hundreds] . ' ' . $dictionary[100];
+            if ($remainder) {
+                $string .= $conjunction . convertNumberToWords($remainder);
+            }
+            break;
+        default:
+            $baseUnit     = pow(1000, floor(log($number, 1000)));
+            if ($baseUnit >= 10000000) $baseUnit = 10000000;
+            elseif ($baseUnit >= 100000) $baseUnit = 100000;
+            elseif ($baseUnit >= 1000) $baseUnit = 1000;
+
+            $numBaseUnits = (int)($number / $baseUnit);
+            $remainder    = $number % $baseUnit;
+            $string = convertNumberToWords($numBaseUnits) . ' ' . $dictionary[$baseUnit];
+            if ($remainder) {
+                $string .= $remainder < 100 ? $conjunction : $separator;
+                $string .= convertNumberToWords($remainder);
+            }
+            break;
+    }
+
+    if (null !== $fraction && is_numeric($fraction)) {
+        $string .= $decimal;
+        $words = [];
+        foreach (str_split((string)$fraction) as $number) {
+            $words[] = $dictionary[$number];
+        }
+        $string .= implode(' ', $words);
+    }
+
+    return $string;
+}
+
+
 ?>
 
-<section class="d-flex pb-5">
+<section class="container d-flex pb-5">
     <?php include 'include/navbar.php'; ?>
-    <div class="container data-table p-5 ">
-        <div class="ps-5">
-            <div>
-                <h1>BILLS</h1>
-            </div>
+    <div class="container-fluid p-4">
+        
+        <!-- Page Header -->
+        <div class="mb-4">
+            <h1 class="fw-bold">BILLS</h1>
             <nav aria-label="breadcrumb">
-              <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="index">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">BILLS</li>
-              </ol>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="index">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">BILLS</li>
+                </ol>
             </nav>
         </div>
-        <div class="bg-white con-tbl p-5">
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0;
-            padding: 20px;
-            color: #333;
-            background-color: #f9f9f9;
-        }
-        .bill-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            border: 1px solid #ddd;
-        }
-        .bill-header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #4a86e8;
-            padding-bottom: 20px;
-        }
-        .bill-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #4a86e8;
-            margin: 0;
-        }
-        .bill-subtitle {
-            font-size: 16px;
-            color: #666;
-        }
-        .bill-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-        }
-        .bill-from, .bill-to {
-            width: 48%;
-        }
-        .info-label {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #555;
-        }
-        .service-type {
-            background-color: #4a86e8;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .bill-summary {
-            margin-left: auto;
-            width: 50%;
-        }
-        .bill-summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .bill-summary-row.total {
-            font-weight: bold;
-            border-top: 2px solid #4a86e8;
-            font-size: 1.1em;
-        }
-        .bill-notes {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-left: 4px solid #4a86e8;
-        }
-        .bill-footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #777;
-            font-size: 14px;
-            border-top: 1px solid #ddd;
-            padding-top: 20px;
-        }
-        .action-buttons {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .action-buttons button {
-            padding: 10px 20px;
-            margin: 0 10px;
-            background-color: #4a86e8;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .action-buttons button:hover {
-            background-color: #3a76d8;
-        }
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
-            }
-            .bill-container {
-                box-shadow: none;
-                border: none;
-                padding: 0;
-            }
-            .action-buttons {
-                display: none;
-            }
-        }
-    </style>
 
-    <div class="bill-container">
-        <div class="bill-header">
-            <h1 class="bill-title">INVOICE</h1>
-            <p class="bill-subtitle">Number: <?php echo $bill_id; ?></p>
-            <p class="bill-subtitle">Date: <?php echo date('F j, Y', strtotime($bill_date)); ?></p>
-        </div>
-        
-        <div class="bill-info">
-            <div class="bill-from">
-                <div class="info-label">FROM:</div>
-                <div>Your Company Name</div>
-                <div>123 Business Street</div>
-                <div>Business City, BC 12345</div>
-                <div>Phone: (123) 456-7890</div>
-                <div>Email: company@example.com</div>
+        <!-- Invoice Section -->
+        <div class="bg-white shadow rounded p-5" id="reportSection">
+
+            <!-- Header / Letterhead -->
+            <div class="text-center border-bottom pb-3 mb-4">
+                <h3 class="mb-0">BHAURAO YASHVANTRAO PINGLE</h3>
+                <h5 class="mb-1">BALAJI MOTOR DRIVING SCHOOL</h5>
+                <p class="mb-1">
+                    3/4 Gurukrupa Sankul, Pimpalgaon(B)<br>
+                    Tal. Niphad, Dist. Nashik-422209<br>
+                    Mo. No. 9881063639 / 9960581819<br>
+                    GST No. 27AIGPP4458B1Z9
+                </p>
+                <h1 class="text-primary fw-bold mt-3">INVOICE</h1>
             </div>
-            
-            <div class="bill-to">
-                <div class="info-label">BILL TO:</div>
-                <div><?php echo htmlspecialchars($bill['client_name']); ?></div>
-                <div><?php echo htmlspecialchars($bill['address']); ?></div>
-                <div>Contact: <?php echo htmlspecialchars($bill['contact']); ?></div>
-                <?php if (!empty($bill['email'])): ?>
-                <div>Email: <?php echo htmlspecialchars($bill['email']); ?></div>
-                <?php endif; ?>
+
+            <!-- Bill Info -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>Date:</strong> <?= date('F j, Y', strtotime($bill_date)); ?></p>
+                    <p><strong>Invoice No:</strong> <?= $bill_id; ?></p>
+                    <h6 class="fw-bold mt-3">BILL TO:</h6>
+                    <p class="mb-0"><?= htmlspecialchars($bill['client_name']); ?></p>
+                    <p class="mb-0"><?= htmlspecialchars($bill['address']); ?></p>
+                    <p class="mb-0">Contact: <?= htmlspecialchars($bill['contact']); ?></p>
+                    <?php if (!empty($bill['email'])): ?>
+                        <p>Email: <?= htmlspecialchars($bill['email']); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Bill Items Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Description</th>
+                            <th>Unit Price</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($items as $item): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($item['description']); ?></td>
+                                <td><?= formatCurrency($item['unit_price']); ?></td>
+                                <td class="text-end"><?= formatCurrency($item['amount']); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totals Section -->
+            <div class="row justify-content-end">
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between border-bottom py-2">
+                        <span>Subtotal:</span>
+                        <span><?= formatCurrency($subtotal); ?></span>
+                    </div>
+                    <?php if ($tax > 0): ?>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span>Tax (<?= htmlspecialchars($tax_rate); ?>%):</span>
+                            <span><?= formatCurrency($tax); ?></span>
+                        </div>
+                    <?php endif; ?>
+                    <div class="d-flex justify-content-between fw-bold fs-5 pt-2 mt-2">
+                        <span>Total:</span>
+                        <span><?= formatCurrency($total); ?></span>
+                    </div>
+                    <p class="mt-2 fw-bold">
+                        Amount in Words: <?= ucwords(convertNumberToWords(round($total))) . ' Rupees Only'; ?>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Signature Section -->
+            <div class="row mt-5">
+                <div class="col-md-6"></div>
+                <div class="col-md-6 text-end">
+                    <h5 class="fw-bold mb-4">Authorised Signatory</h5>
+                    <div class="p-5"></div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-5 border-top pt-3 text-muted">
+                <p class="mb-0">Subject to Pimpalgaon(B) jurisdiction</p>
+                <p class="mb-0">Thanks for doing business with us!</p>
             </div>
         </div>
-        
-        <div class="service-type">
-            Service Type: <?php echo htmlspecialchars($service_type); ?>
+
+        <!-- Print Button -->
+        <div class="text-center mt-4">
+            <button type="button" class="btn btn-primary" onclick="showPasswordModal()">Print</button>
         </div>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>Description</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th class="text-right">Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($items as $item): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($item['description']); ?></td>
-                    <td><?php echo htmlspecialchars($item['quantity']); ?></td>
-                    <td><?php echo formatCurrency($item['unit_price']); ?></td>
-                    <td class="text-right"><?php echo formatCurrency($item['amount']); ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-        
-        <div class="bill-summary">
-            <div class="bill-summary-row">
-                <div>Subtotal:</div>
-                <div><?php echo formatCurrency($subtotal); ?></div>
-            </div>
-            <?php if ($tax > 0): ?>
-            <div class="bill-summary-row">
-                <div>Tax (<?php echo htmlspecialchars($tax_rate); ?>%):</div>
-                <div><?php echo formatCurrency($tax); ?></div>
-            </div>
-            <?php endif; ?>
-            <?php if ($discount > 0): ?>
-            <div class="bill-summary-row">
-                <div>Discount:</div>
-                <div><?php echo formatCurrency($discount); ?></div>
-            </div>
-            <?php endif; ?>
-            <div class="bill-summary-row total">
-                <div>TOTAL:</div>
-                <div><?php echo formatCurrency($total); ?></div>
-            </div>
-        </div>
-        
-        <?php if (!empty($notes)): ?>
-        <div class="bill-notes">
-            <strong>Notes:</strong><br>
-            <?php echo nl2br(htmlspecialchars($notes)); ?>
-        </div>
-        <?php endif; ?>
-        
-        <div class="bill-footer">
-            <p>Thank you for your business!</p>
-            <p>Please make payment within 30 days of receiving this invoice.</p>
-        </div>
-    </div>
-    
-    <div class="action-buttons">
-        <button onclick="window.print()">Print Bill</button>
-    </div>
     </div>
 </section>
+
+
+<!-- PRINT CSS -->
+<style>
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        margin: 0;
+        padding: 0;
+    }
+    @page {
+        size: A4;
+        margin: 30mm 10mm 10mm 10mm;  /* adjust to fit letterhead layout */
+    }
+    #reportSection {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100%;
+    }
+    .btn, .breadcrumb, .navbar, .action-buttons {
+        display: none !important; /* hide buttons, navbar, etc. */
+    }
+}
+</style>
+
+
+
+<!-- Password verification Modal for print screen -->
+<div class="modal fade" id="printpasswordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <!-- <h5 class="modal-title" id="passwordModalLabel">Enter Password For Print</h5> -->
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="password" id="passwordInput" class="form-control" placeholder="Enter password" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="validatePassword()">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- script for print password verify -->
+<script>
+    // Show the password modal when the button is clicked
+    function showPasswordModal() {
+        $('#printpasswordModal').modal('show');
+    }
+
+    // Validate the password entered
+    async function validatePassword() {
+        const userPassword = document.getElementById('passwordInput').value;
+
+        if (!userPassword) {
+            alert("Password is required.");
+            return;
+        }
+
+        // Validate the entered password with the backend
+        const validationResult = await validatePasswordOnServer(userPassword);
+
+        if (validationResult.success) {
+            // Password is correct, proceed with print
+            window.print();
+            $('#printpasswordModal').modal('hide'); // Close the modal
+        } else {
+            // Show error message if the password is incorrect
+            alert(validationResult.error || "Incorrect password!");
+        }
+    }
+
+    // Function to send password to server for validation
+    async function validatePasswordOnServer(userPassword) {
+        try {
+            const response = await fetch('print_pass.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `password=${encodeURIComponent(userPassword)}`
+            });
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error("Error validating password:", error);
+            return { success: false, error: "Error validating password" };
+        }
+    }
+</script>

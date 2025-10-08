@@ -28,7 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ids = array_map('intval', $ids);
             $idList = implode(',', $ids);
 
-            $query = "UPDATE bmds_entries SET is_deleted = 1, deleted_at = NOW() WHERE id IN ($idList)";
+            $query = "UPDATE bmds_entries 
+                        SET 
+                            amount = 0,
+                            adv_amount = 0,
+                            bal_amount = 0,
+                            recov_amount = 0
+                        WHERE id IN ($idList)";
             if ($conn->query($query)) {
                 echo "<script>alert('Selected records deleted successfully.'); window.location.href='bmds.php';</script>";
             } else {

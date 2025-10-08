@@ -165,6 +165,7 @@ ob_start();
             $total_records = 0;
             $total_amount = 0;
             $ride_km_difference = 0;
+            $offset = ($items_per_page === 'all') ? 0 : ($current_page - 1) * $items_per_page;
             
             // $items_per_page = 10; // Number of entries per page
             // $offset = ($current_page - 1) * $items_per_page;

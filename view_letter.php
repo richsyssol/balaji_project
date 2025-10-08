@@ -58,11 +58,11 @@ if (isset($_GET['id'])) {
 
                     <p><?= nl2br(htmlspecialchars($letter['message'])) ?></p>
 
-                    <p><?= nl2br(htmlspecialchars($letter['textmsg'])) ?></p>
 
                     <p>
                         Yours Sincerely, <br>
-                        <?= htmlspecialchars($letter['sender_name']) ?>
+                        <div class="border w-25 p-4"></div> <br>
+                        (<?= htmlspecialchars($letter['sender_name']) ?>)
                     </p>
                 </div>
 

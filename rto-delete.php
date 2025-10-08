@@ -1,13 +1,4 @@
 <?php 
-// session_start(); // Start the session
-
-// // Check if user is logged in
-// if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true ) {
-//     // Redirect to login page if not logged in
-//     header("Location: login.php"); // Adjust path if needed
-//     exit(); // Ensure no further code is executed
-// }
-// else{
     include 'include/header.php'; 
     include 'include/head.php'; 
     include 'session_check.php';
@@ -23,7 +14,6 @@
 
 
 <?php
-session_start();
 include 'includes/db_conn.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -64,7 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($_SESSION['itemId']); // Clear session
 
         // Perform soft delete by setting deleted_at
-        $query = "UPDATE rto_entries SET deleted_at = NOW(), is_deleted = 1 WHERE id = ?";
+        $query = "UPDATE rto_entries SET 
+                            amount = 0,
+                            adv_amount = 0,
+                            gov_amount = 0,
+                            other_amount = 0,
+                            recov_amount = 0,
+                            expenses = 0,
+                            net_amt = 0
+                            WHERE id = ?";
 
         $stmt = $conn->prepare($query);
         $stmt->bind_param('i', $itemId);
