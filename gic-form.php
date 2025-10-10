@@ -1264,7 +1264,7 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
                 </div>
             
              <!-- Hidden fields for cheque details -->
-            <div id="chequeDetails" style="display: <?php echo ($is_edit && $pay_mode == 'Cheque') ? 'block' : 'none'; ?>;">
+            <div id="chequeDetails" style="display: <?php echo ($is_edit && $pay_mode == 'CHEQUE') ? 'block' : 'none'; ?>;">
                 <div class="row g-3">
                     
                     <div class="col-md-3 field mt-3">
@@ -1333,8 +1333,11 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
                
                     <div class="col-md-3 field mt-3">
                         <label for="chequeDate" class="form-label">Cheque Date</label>
-                        <input type="date" name="check_dt" value="<?php if ($is_edit) { echo htmlspecialchars($check_dt); } ?>" class="form-control" id="chequeDate">
+                        <input type="date" name="cheque_dt" value="<?php echo htmlspecialchars($cheque_dt);?>" class="form-control">
                     </div>
+
+    
+
                 </div>
             </div>
             
@@ -1512,7 +1515,7 @@ window.addEventListener('load', function () {
         const chequeDetails = document.getElementById('chequeDetails');
 
         function toggleChequeDetails() {
-            if (paymentMode.value === 'Cheque') {
+            if (paymentMode.value === 'CHEQUE') {
                 chequeDetails.style.display = 'block';
             } else {
                 chequeDetails.style.display = 'none';
