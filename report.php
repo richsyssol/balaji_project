@@ -404,29 +404,51 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
                 </div>
 
                 <!-- Department-wise summary table -->
-                <?php if ($department == 'All'): ?>
                 <div class="mt-5">
                     <h4>Summary</h4>
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th></th>
+                                <th>Department</th>
                                 <th>Number of Entries</th>
                                 <th>Total Advance Amount</th>
                                 <th>Total Recovery Amount</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($department_totals as $dept => $totals): 
-                                if ($totals['count'] > 0): ?>
-                                <tr>
-                                    <td><?php echo $dept; ?></td>
-                                    <td><?php echo $totals['count']; ?></td>
-                                    <td><?php echo number_format($totals['adv_amount'], 2); ?></td>
-                                    <td><?php echo number_format($totals['recov_amount'], 2); ?></td>
-                                </tr>
-                            <?php endif;
-                            endforeach; ?>
+                            <?php 
+                            // If user selected 'All', show all department totals
+                            if ($department == 'All') {
+                                foreach ($department_totals as $dept => $totals): 
+                                    if ($totals['count'] > 0): ?>
+                                        <tr>
+                                            <td><?php echo $dept; ?></td>
+                                            <td><?php echo $totals['count']; ?></td>
+                                            <td><?php echo number_format($totals['adv_amount'], 2); ?></td>
+                                            <td><?php echo number_format($totals['recov_amount'], 2); ?></td>
+                                        </tr>
+                                    <?php endif;
+                                endforeach; 
+                            } 
+                            // If a specific department is selected, show only that one
+                            else {
+                                if (isset($department_totals[$department])) {
+                                    $totals = $department_totals[$department];
+                                    if ($totals['count'] > 0) { ?>
+                                        <tr>
+                                            <td><?php echo $department; ?></td>
+                                            <td><?php echo $totals['count']; ?></td>
+                                            <td><?php echo number_format($totals['adv_amount'], 2); ?></td>
+                                            <td><?php echo number_format($totals['recov_amount'], 2); ?></td>
+                                        </tr>
+                                    <?php } else { ?>
+                                        <tr>
+                                            <td colspan="4" class="text-center">No data available for <?php echo $department; ?></td>
+                                        </tr>
+                                    <?php }
+                                }
+                            }
+                            ?>
                             <tr>
                                 <td><strong>Grand Total</strong></td>
                                 <td><strong><?php echo $total_entries_count; ?></strong></td>
@@ -436,7 +458,7 @@ if (isset($_POST['generate_report']) || isset($_POST['generate_csv']) || isset($
                         </tbody>
                     </table>
                 </div>
-                <?php endif; ?>
+
                 
                 </div>
 
