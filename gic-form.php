@@ -421,47 +421,213 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
     // exit;
 
     // If no errors, process the form
-    if (empty($errors)) {
-        if ($is_edit) {
-            $policy_type = $_POST['policy_type'];
+   if (empty($errors)) {
+    if ($is_edit) {
+        $policy_type = $_POST['policy_type'];
+        
+        if ($policy_type === 'Motor') {
+            $vehicle_type = $_POST['vehicle_type'] === 'Enter Manually' ? $_POST['vehicleType'] : $_POST['vehicle_type'];
+            $policy_company = $_POST['policy_company'] === 'Enter Manually' ? $_POST['policycustom'] : $_POST['policy_company'];
+            $adviser_name = $_POST['adviser_name'] === 'Enter Manually' ? $_POST['advisercustom'] : $_POST['adviser_name'];
+            $vehicle = $_POST['vehicle'] === 'Enter Manually' ? $_POST['vehiclecustom'] : $_POST['vehicle'];
+            $branch_name = $_POST['branch_name'] === 'Enter Manually' ? $_POST['branch_name_custom'] : $_POST['branch_name'];
+            $bank_name = $_POST['bank_name'] === 'Enter Manually' ? $_POST['bank_name_custom'] : $_POST['bank_name'];
             
-            if ($policy_type === 'Motor') {
-                $vehicle_type = $_POST['vehicle_type'] === 'Enter Manually' ? $_POST['vehicleType'] : $_POST['vehicle_type'];
-                $policy_company = $_POST['policy_company'] === 'Enter Manually' ? $_POST['policycustom'] : $_POST['policy_company'];
-                $adviser_name = $_POST['adviser_name'] === 'Enter Manually' ? $_POST['advisercustom'] : $_POST['adviser_name'];
-                $vehicle = $_POST['vehicle'] === 'Enter Manually' ? $_POST['vehiclecustom'] : $_POST['vehicle'];
-                $branch_name = $_POST['branch_name'] === 'Enter Manually' ? $_POST['branch_name_custom'] : $_POST['branch_name'];
-                $bank_name = $_POST['bank_name'] === 'Enter Manually' ? $_POST['bank_name_custom'] : $_POST['bank_name'];
-                
-                $sql = "UPDATE gic_entries SET client_id = '$client_id', reg_num='$reg_num', policy_date='$policy_date',time='$time', client_name='$client_name', contact='$contact', policy_duration='$policy_duration', start_date='$start_date', end_date='$end_date', client_type='$client_type', policy_type='$policy_type', sub_type='$sub_type', mv_number='$mv_number', vehicle_type='$vehicle_type',policy_company='$policy_company',policy_number='$policy_number', amount='$amount', pay_mode='$pay_mode', cheque_no='$cheque_no', bank_name='$bank_name', cheque_dt='$cheque_dt', remark='$remark',contact_alt='$contact_alt', email='$email', policycustom='$policycustom',recovery_amount='$recovery_amount', policyInput='$policyInput', adv_amount='$adv_amount', bal_amount='$bal_amount', recov_amount='$recov_amount', address='$address',fiscal_year='$fiscalYear',responsibility='$responsibility',form_status='$form_status',birth_date='$birth_date',update_on='$update_on',adviser_name='$adviser_name',vehicle = '$vehicle',branch_name = '$branch_name',year_count='$year_count',is_long_term='$is_long_term' WHERE id=$id";
-            }
-            elseif ($policy_type === 'NonMotor'){
-                $nonmotor_type_select = $_POST['nonmotor_type_select'] === 'Enter Manually' ? $_POST['nonmotor_type'] : $_POST['nonmotor_type_select'];
-                $nonmotor_subtype_select = $_POST['nonmotor_subtype_select'] === 'Enter Manually' ? $_POST['nonmotor_subtype'] : $_POST['nonmotor_subtype_select'];
-                $policy_company = $_POST['policy_company'] === 'Enter Manually' ? $_POST['policycustom'] : $_POST['policy_company'];
-                $adviser_name = $_POST['adviser_name'] === 'Enter Manually' ? $_POST['advisercustom'] : $_POST['adviser_name'];
-                $branch_name = $_POST['branch_name'] === 'Enter Manually' ? $_POST['branch_name_custom'] : $_POST['branch_name'];
-                $bank_name = $_POST['bank_name'] === 'Enter Manually' ? $_POST['bank_name_custom'] : $_POST['bank_name'];
-                
-                $sql = "UPDATE gic_entries SET client_id = '$client_id', reg_num='$reg_num', policy_date='$policy_date',time='$time', client_name='$client_name', contact='$contact', policy_duration='$policy_duration', start_date='$start_date', end_date='$end_date', client_type='$client_type', policy_type='$policy_type', nonmotor_type_select='$nonmotor_type_select', nonmotor_type='$nonmotor_type', nonmotor_subtype='$nonmotor_subtype',nonmotor_subtype_select='$nonmotor_subtype_select',policy_company='$policy_company',policy_number='$policy_number', amount='$amount', pay_mode='$pay_mode', cheque_no='$cheque_no', bank_name='$bank_name', cheque_dt='$cheque_dt', remark='$remark', contact_alt='$contact_alt', email='$email', policycustom='$policycustom', recovery_amount='$recovery_amount', policyInput='$policyInput', adv_amount='$adv_amount', bal_amount='$bal_amount', recov_amount='$recov_amount', address='$address',fiscal_year='$fiscalYear',responsibility='$responsibility',form_status='$form_status',birth_date='$birth_date',update_on='$update_on',adviser_name='$adviser_name',branch_name = '$branch_name',year_count='$year_count',is_long_term='$is_long_term' WHERE id=$id";
+            $sql = "UPDATE gic_entries SET client_id = '$client_id', reg_num='$reg_num', policy_date='$policy_date',time='$time', client_name='$client_name', contact='$contact', policy_duration='$policy_duration', start_date='$start_date', end_date='$end_date', client_type='$client_type', policy_type='$policy_type', sub_type='$sub_type', mv_number='$mv_number', vehicle_type='$vehicle_type',policy_company='$policy_company',policy_number='$policy_number', amount='$amount', pay_mode='$pay_mode', cheque_no='$cheque_no', bank_name='$bank_name', cheque_dt='$cheque_dt', remark='$remark',contact_alt='$contact_alt', email='$email', policycustom='$policycustom',recovery_amount='$recovery_amount', policyInput='$policyInput', adv_amount='$adv_amount', bal_amount='$bal_amount', recov_amount='$recov_amount', address='$address',fiscal_year='$fiscalYear',responsibility='$responsibility',form_status='$form_status',birth_date='$birth_date',update_on='$update_on',adviser_name='$adviser_name',vehicle = '$vehicle',branch_name = '$branch_name',year_count='$year_count',is_long_term='$is_long_term' WHERE id=$id";
+        }
+        elseif ($policy_type === 'NonMotor'){
+            $nonmotor_type_select = $_POST['nonmotor_type_select'] === 'Enter Manually' ? $_POST['nonmotor_type'] : $_POST['nonmotor_type_select'];
+            $nonmotor_subtype_select = $_POST['nonmotor_subtype_select'] === 'Enter Manually' ? $_POST['nonmotor_subtype'] : $_POST['nonmotor_subtype_select'];
+            $policy_company = $_POST['policy_company'] === 'Enter Manually' ? $_POST['policycustom'] : $_POST['policy_company'];
+            $adviser_name = $_POST['adviser_name'] === 'Enter Manually' ? $_POST['advisercustom'] : $_POST['adviser_name'];
+            $branch_name = $_POST['branch_name'] === 'Enter Manually' ? $_POST['branch_name_custom'] : $_POST['branch_name'];
+            $bank_name = $_POST['bank_name'] === 'Enter Manually' ? $_POST['bank_name_custom'] : $_POST['bank_name'];
+            
+            $sql = "UPDATE gic_entries SET client_id = '$client_id', reg_num='$reg_num', policy_date='$policy_date',time='$time', client_name='$client_name', contact='$contact', policy_duration='$policy_duration', start_date='$start_date', end_date='$end_date', client_type='$client_type', policy_type='$policy_type', nonmotor_type_select='$nonmotor_type_select', nonmotor_type='$nonmotor_type', nonmotor_subtype='$nonmotor_subtype',nonmotor_subtype_select='$nonmotor_subtype_select',policy_company='$policy_company',policy_number='$policy_number', amount='$amount', pay_mode='$pay_mode', cheque_no='$cheque_no', bank_name='$bank_name', cheque_dt='$cheque_dt', remark='$remark', contact_alt='$contact_alt', email='$email', policycustom='$policycustom', recovery_amount='$recovery_amount', policyInput='$policyInput', adv_amount='$adv_amount', bal_amount='$bal_amount', recov_amount='$recov_amount', address='$address',fiscal_year='$fiscalYear',responsibility='$responsibility',form_status='$form_status',birth_date='$birth_date',update_on='$update_on',adviser_name='$adviser_name',branch_name = '$branch_name',year_count='$year_count',is_long_term='$is_long_term' WHERE id=$id";
+        }
+
+        if (isset($sql) && $conn->query($sql) === TRUE) {
+            header("Location: gic?show_message_prompt=1&id=$id");
+            exit();
+        } else {
+            echo "Error updating record: " . ($conn->error ?? "SQL query not properly constructed");
+        }
+    } 
+    elseif ($add_new) {
+        $original_id = $_GET['id'];
+        $policy_type = $_POST['policy_type'];
+
+        $deleteOldPolicy = "DELETE FROM gic_entries WHERE id = '$original_id'";
+        $conn->query($deleteOldPolicy);
+        
+        // Create unique submission identifier FIRST
+        $username = $_SESSION['username'];
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
+        
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['gic_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database FIRST
+        $check_duplicate = "SELECT id FROM gic_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['gic_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Now process based on policy type
+        if ($policy_type === 'Motor') {
+            $policy_company = strtoupper(trim($_POST['policy_company'] ?? ''));
+            $policycustom = strtoupper(trim($_POST['policycustom'] ?? ''));
+            if ($policy_company == "Enter Manually") {
+                $policy_company = strtoupper($policycustom);
             }
 
-            if (isset($sql) && $conn->query($sql) === TRUE) {
-                header("Location: gic?show_message_prompt=1&id=$id");
+            $adviser_name = strtoupper(trim($_POST['adviser_name']));
+            $advisercustom = strtoupper(trim($_POST['advisercustom'] ?? ''));
+            if ($adviser_name == "ENTER MANUALLY") {
+                $adviser_name = $advisercustom;
+            }
 
+            $vehicle_type = strtoupper(trim($_POST['vehicle_type']));
+            $vehicleType = strtoupper(trim($_POST['vehicleType'] ?? ''));
+            if ($vehicle_type == "ENTER MANUALLY") {
+                $vehicle_type = $vehicleType;
+            }
+
+            $vehicle = strtoupper(trim($_POST['vehicle']));
+            $vehiclecustom = strtoupper(trim($_POST['vehiclecustom'] ?? ''));
+            if ($vehicle == "ENTER MANUALLY") {
+                $vehicle = $vehiclecustom;
+            }
+
+            $bank_name = strtoupper(trim($_POST['bank_name']));
+            $bank_name_custom = strtoupper(trim($_POST['bank_name_custom'] ?? ''));
+            if ($bank_name == "ENTER MANUALLY") {
+                $bank_name = $bank_name_custom;
+            }
+
+            $branch_name = strtoupper(trim($_POST['branch_name']));
+            $branch_name_custom = strtoupper(trim($_POST['branch_name_custom'] ?? ''));
+            if ($branch_name == "ENTER MANUALLY") {
+                $branch_name = $branch_name_custom;
+            }
+
+            // Proceed with insertion
+            $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, sub_type, mv_number, vehicle_type, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom, recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,vehicle,branch_name,is_renewed, renewal_of,year_count,is_long_term) 
+                    VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$client_type', '$policy_type', '$sub_type', '$mv_number', '$vehicle_type', '$policy_company', '$policy_number', '$amount', '$pay_mode', '$cheque_no', '$bank_name', '$cheque_dt', '$remark', '$contact_alt', '$email', '$policycustom', '$recovery_amount', '$policyInput', '$adv_amount', '$bal_amount', '$recov_amount', '$address', '$username', '$fiscalYear', '$responsibility', '$form_status', '$creation_on', '$birth_date','$adviser_name','$vehicle','$branch_name', '1', '$original_id','$year_count','$is_long_term')";
+            
+            if ($conn->query($sql) === TRUE) {
+                // Mark this submission as processed
+                $_SESSION['gic_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
                 exit();
             } else {
-                echo "Error updating record: " . ($conn->error ?? "SQL query not properly constructed");
+                echo "Error: " . $conn->error;
             }
         } 
-        elseif ($add_new) {
-            $original_id = $_GET['id'];
-            $policy_type = $_POST['policy_type'];
+        elseif ($policy_type === 'NonMotor') {
+            $nonmotor_type_select = strtoupper(trim($_POST['nonmotor_type_select']));
+            $nonmotor_type = strtoupper(trim($_POST['nonmotor_type'] ?? ''));
+            if ($nonmotor_type_select == "ENTER MANUALLY" || $nonmotor_type_select == "Enter Manually") {
+                $nonmotor_type_select = $nonmotor_type;
+            }
 
-            $deleteOldPolicy = "DELETE FROM gic_entries WHERE id = '$original_id'";
-            $conn->query($deleteOldPolicy);
+            $nonmotor_subtype_select = strtoupper(trim($_POST['nonmotor_subtype_select']));
+            $nonmotor_subtype = strtoupper(trim($_POST['nonmotor_subtype'] ?? ''));
+            if ($nonmotor_subtype_select == "ENTER MANUALLY" || $nonmotor_subtype_select == "Enter Manually") {
+                $nonmotor_subtype_select = $nonmotor_subtype;
+            }
+
+            $policy_company = strtoupper(trim($_POST['policy_company'] ?? ''));
+            $policycustom = strtoupper(trim($_POST['policycustom'] ?? ''));
+            if ($policy_company == "Enter Manually") {
+                $policy_company = trim($policycustom);
+            }
+
+            $adviser_name = strtoupper(trim($_POST['adviser_name']));
+            $advisercustom = strtoupper(trim($_POST['advisercustom'] ?? ''));
+            if ($adviser_name == "Enter Manually") {
+                $adviser_name = $advisercustom;
+            }
+
+            $bank_name = strtoupper(trim($_POST['bank_name']));
+            $bank_name_custom = strtoupper(trim($_POST['bank_name_custom'] ?? ''));
+            if ($bank_name == "Enter Manually") {
+                $bank_name = $bank_name_custom;
+            }
+
+            $branch_name = strtoupper(trim($_POST['branch_name']));
+            $branch_name_custom = strtoupper(trim($_POST['branch_name_custom'] ?? ''));
+            if ($branch_name == "Enter Manually") {
+                $branch_name = $branch_name_custom;
+            }
+
+            // Proceed with insertion
+            $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, nonmotor_type_select, nonmotor_type, nonmotor_subtype_select, nonmotor_subtype, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom,  recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,branch_name,is_renewed, renewal_of,year_count,is_long_term) 
+                    VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$client_type', '$policy_type', '$nonmotor_type_select', '$nonmotor_type', '$nonmotor_subtype_select', '$nonmotor_subtype', '$policy_company', '$policy_number', '$amount', '$pay_mode', '$cheque_no', '$bank_name', '$cheque_dt', '$remark', '$contact_alt', '$email', '$policycustom', '$recovery_amount', '$policyInput', '$adv_amount', '$bal_amount', '$recov_amount', '$address', '$username', '$fiscalYear', '$responsibility', '$form_status', '$creation_on', '$birth_date','$adviser_name','$branch_name', '1', '$original_id','$year_count','$is_long_term')";
             
-            if ($policy_type === 'Motor') {
+            if ($conn->query($sql) === TRUE) {
+                // Mark this submission as processed
+                $_SESSION['gic_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
+                exit();
+            } else {
+                echo "Error: " . $conn->error;
+            }
+        }
+    }
+    elseif ($add_client) {
+        $username = $_SESSION['username'];
+        $policy_type = $_POST['policy_type'];
+        
+        // Create unique submission identifier FIRST
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
+        
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['gic_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database FIRST
+        $check_duplicate = "SELECT id FROM gic_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['gic_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Now process based on policy type
+        if ($policy_type === 'Motor') {
+            $mv_number = $_POST['mv_number'];
+    
+            // Check MV number duplication only after general duplicate check
+            $mv_check_sql = "SELECT * FROM gic_entries WHERE mv_number = '$mv_number'";
+            $mv_check_result = $conn->query($mv_check_sql);
+    
+            if ($mv_check_result->num_rows > 0) {
+                $errors[] = "A record with this MV Number already exists.";
+            } else {
                 $policy_company = strtoupper(trim($_POST['policy_company'] ?? ''));
                 $policycustom = strtoupper(trim($_POST['policycustom'] ?? ''));
                 if ($policy_company == "Enter Manually") {
@@ -497,168 +663,83 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
                 if ($branch_name == "ENTER MANUALLY") {
                     $branch_name = $branch_name_custom;
                 }
-                
-                $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, sub_type, mv_number, vehicle_type, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom, recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,vehicle,branch_name,is_renewed, renewal_of,year_count,is_long_term) 
-                        VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$client_type', '$policy_type', '$sub_type', '$mv_number', '$vehicle_type', '$policy_company', '$policy_number', '$amount', '$pay_mode', '$cheque_no', '$bank_name', '$cheque_dt', '$remark', '$contact_alt', '$email', '$policycustom', '$recovery_amount', '$policyInput', '$adv_amount', '$bal_amount', '$recov_amount', '$address', '$username', '$fiscalYear', '$responsibility', '$form_status', '$creation_on', '$birth_date','$adviser_name','$vehicle','$branch_name', '1', '$original_id','$year_count','$is_long_term')";
-            } 
-            elseif ($policy_type === 'NonMotor') {
-                $nonmotor_type_select = strtoupper(trim($_POST['nonmotor_type_select']));
-                $nonmotor_type = strtoupper(trim($_POST['nonmotor_type'] ?? ''));
-                if ($nonmotor_type_select == "ENTER MANUALLY" || $nonmotor_type_select == "Enter Manually") {
-                    $nonmotor_type_select = $nonmotor_type;
-                }
 
-                $nonmotor_subtype_select = strtoupper(trim($_POST['nonmotor_subtype_select']));
-                $nonmotor_subtype = strtoupper(trim($_POST['nonmotor_subtype'] ?? ''));
-                if ($nonmotor_subtype_select == "ENTER MANUALLY" || $nonmotor_subtype_select == "Enter Manually") {
-                    $nonmotor_subtype_select = $nonmotor_subtype;
-                }
-
-                $policy_company = strtoupper(trim($_POST['policy_company'] ?? ''));
-                $policycustom = strtoupper(trim($_POST['policycustom'] ?? ''));
-                if ($policy_company == "Enter Manually") {
-                    $policy_company = trim($policycustom);
-                }
-
-                $adviser_name = strtoupper(trim($_POST['adviser_name']));
-                $advisercustom = strtoupper(trim($_POST['advisercustom'] ?? ''));
-                if ($adviser_name == "Enter Manually") {
-                    $adviser_name = $advisercustom;
-                }
-
-
-                $bank_name = strtoupper(trim($_POST['bank_name']));
-                $bank_name_custom = strtoupper(trim($_POST['bank_name_custom'] ?? ''));
-                if ($bank_name == "Enter Manually") {
-                    $bank_name = $bank_name_custom;
-                }
-
-                $branch_name = strtoupper(trim($_POST['branch_name']));
-                $branch_name_custom = strtoupper(trim($_POST['branch_name_custom'] ?? ''));
-                if ($branch_name == "Enter Manually") {
-                    $branch_name = $branch_name_custom;
-                }
-
-                $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, nonmotor_type_select, nonmotor_type, nonmotor_subtype_select, nonmotor_subtype, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom,  recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,branch_name,is_renewed, renewal_of,year_count,is_long_term) 
-                        VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$client_type', '$policy_type', '$nonmotor_type_select', '$nonmotor_type', '$nonmotor_subtype_select', '$nonmotor_subtype', '$policy_company', '$policy_number', '$amount', '$pay_mode', '$cheque_no', '$bank_name', '$cheque_dt', '$remark', '$contact_alt', '$email', '$policycustom', '$recovery_amount', '$policyInput', '$adv_amount', '$bal_amount', '$recov_amount', '$address', '$username', '$fiscalYear', '$responsibility', '$form_status', '$creation_on', '$birth_date','$adviser_name','$branch_name', '1', '$original_id','$year_count','$is_long_term')";
-            }
-
-            if (isset($sql) && $conn->query($sql) === TRUE) {
-                header("Location: gic");
-                exit();
-            } else {
-                echo "Error: " . ($conn->error ?? "SQL query not properly constructed");
-            }
-        }
-        elseif ($add_client) {
-            $username = $_SESSION['username'];
-            $policy_type = $_POST['policy_type'];
-            
-        
-            if ($policy_type === 'Motor') {
-                $mv_number = $_POST['mv_number'];
-        
-                $mv_check_sql = "SELECT * FROM gic_entries WHERE mv_number = '$mv_number'";
-                $mv_check_result = $conn->query($mv_check_sql);
-        
-                if ($mv_check_result->num_rows > 0) {
-                    $errors[] = "A record with this MV Number already exists.";
-                } else {
-                    $policy_company = strtoupper(trim($_POST['policy_company'] ?? ''));
-                    $policycustom = strtoupper(trim($_POST['policycustom'] ?? ''));
-                    if ($policy_company == "Enter Manually") {
-                        $policy_company = strtoupper($policycustom);
-                    }
-
-                    $adviser_name = strtoupper(trim($_POST['adviser_name']));
-                    $advisercustom = strtoupper(trim($_POST['advisercustom'] ?? ''));
-                    if ($adviser_name == "ENTER MANUALLY") {
-                        $adviser_name = $advisercustom;
-                    }
-
-
-                    $vehicle_type = strtoupper(trim($_POST['vehicle_type']));
-                    $vehicleType = strtoupper(trim($_POST['vehicleType'] ?? ''));
-                    if ($vehicle_type == "ENTER MANUALLY") {
-                        $vehicle_type = $vehicleType;
-                    }
-
-                    $vehicle = strtoupper(trim($_POST['vehicle']));
-                    $vehiclecustom = strtoupper(trim($_POST['vehiclecustom'] ?? ''));
-                    if ($vehicle == "ENTER MANUALLY") {
-                        $vehicle = $vehiclecustom;
-                    }
-
-                    $bank_name = strtoupper(trim($_POST['bank_name']));
-                    $bank_name_custom = strtoupper(trim($_POST['bank_name_custom'] ?? ''));
-                    if ($bank_name == "ENTER MANUALLY") {
-                        $bank_name = $bank_name_custom;
-                    }
-
-                    $branch_name = strtoupper(trim($_POST['branch_name']));
-                    $branch_name_custom = strtoupper(trim($_POST['branch_name_custom'] ?? ''));
-                    if ($branch_name == "ENTER MANUALLY") {
-                        $branch_name = $branch_name_custom;
-                    }
-
-                    $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, sub_type, mv_number, vehicle_type, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom,  recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,vehicle,branch_name,year_count,is_long_term) 
+                // Proceed with insertion
+                $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, sub_type, mv_number, vehicle_type, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom,  recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,vehicle,branch_name,year_count,is_long_term) 
                         VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$client_type', '$policy_type', '$sub_type', '$mv_number', '$vehicle_type', '$policy_company', '$policy_number', '$amount', '$pay_mode', '$cheque_no', '$bank_name', '$cheque_dt', '$remark', '$contact_alt', '$email', '$policycustom', '$recovery_amount', '$policyInput', '$adv_amount', '$bal_amount', '$recov_amount', '$address', '$username', '$fiscalYear', '$responsibility', '$form_status', '$creation_on', '$birth_date','$adviser_name','$vehicle','$branch_name','$year_count','$is_long_term')";
-                }
-            } 
-            elseif ($policy_type === 'NonMotor') {
-                $nonmotor_type_select = strtoupper(trim($_POST['nonmotor_type_select']));
-                $nonmotor_type = strtoupper(trim($_POST['nonmotor_type'] ?? ''));
-                if ($nonmotor_type_select == "ENTER MANUALLY" || $nonmotor_type_select == "Enter Manually") {
-                    $nonmotor_type_select = $nonmotor_type;
-                }
-
-                $nonmotor_subtype_select = strtoupper(trim($_POST['nonmotor_subtype_select']));
-                $nonmotor_subtype = strtoupper(trim($_POST['nonmotor_subtype'] ?? ''));
-                if ($nonmotor_subtype_select == "ENTER MANUALLY" || $nonmotor_subtype_select == "Enter Manually") {
-                    $nonmotor_subtype_select = $nonmotor_subtype;
-                }
-
-                $policy_company = strtoupper(trim($_POST['policy_company'] ?? ''));
-                $policycustom = strtoupper(trim($_POST['policycustom'] ?? ''));
-                if ($policy_company == "Enter Manually") {
-                    $policy_company = trim($policycustom);
-                }
-
-                $adviser_name = strtoupper(trim($_POST['adviser_name']));
-                $advisercustom = strtoupper(trim($_POST['advisercustom'] ?? ''));
-                if ($adviser_name == "Enter Manually") {
-                    $adviser_name = $advisercustom;
-                }
-
-         
                 
-
-                $bank_name = strtoupper(trim($_POST['bank_name'] ?? ''));
-                $bank_name_custom = strtoupper(trim($_POST['bank_name_custom'] ?? ''));
-                if ($bank_name == "Enter Manually") {
-                    $bank_name = $bank_name_custom;
-                }
-
-                $branch_name = strtoupper(trim($_POST['branch_name'] ?? ''));
-                $branch_name_custom = strtoupper(trim($_POST['branch_name_custom'] ?? ''));
-                if ($branch_name == "Enter Manually") {
-                    $branch_name = $branch_name_custom;
-                }
-
-                $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, nonmotor_type_select, nonmotor_type, nonmotor_subtype_select, nonmotor_subtype, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom,  recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,branch_name,vehicle,year_count,is_long_term) 
-                    VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$client_type', '$policy_type', '$nonmotor_type_select', '$nonmotor_type', '$nonmotor_subtype_select', '$nonmotor_subtype', '$policy_company', '$policy_number', '$amount', '$pay_mode', '$cheque_no', '$bank_name', '$cheque_dt', '$remark', '$contact_alt', '$email', '$policycustom', '$recovery_amount', '$policyInput', '$adv_amount', '$bal_amount', '$recov_amount', '$address', '$username', '$fiscalYear', '$responsibility', '$form_status', '$creation_on', '$birth_date','$adviser_name','$branch_name','$vehicle','$year_count','$is_long_term')";
-            }
-
-            if (isset($sql) && empty($errors)) {
                 if ($conn->query($sql) === TRUE) {
-                    header("Location: gic");
+                    // Mark this submission as processed
+                    $_SESSION['gic_processed_submissions'][$submission_hash] = true;
+                    
+                    $last_id = $conn->insert_id;
+                    $_SESSION['last_submission'] = $last_id;
+                    $_SESSION['submission_time'] = time();
+                    
+                    header("Location: client?success=1&id=" . $last_id);
                     exit();
                 } else {
                     echo "Error: " . $conn->error;
                 }
             }
+        } 
+        elseif ($policy_type === 'NonMotor') {
+            $nonmotor_type_select = strtoupper(trim($_POST['nonmotor_type_select']));
+            $nonmotor_type = strtoupper(trim($_POST['nonmotor_type'] ?? ''));
+            if ($nonmotor_type_select == "ENTER MANUALLY" || $nonmotor_type_select == "Enter Manually") {
+                $nonmotor_type_select = $nonmotor_type;
+            }
+
+            $nonmotor_subtype_select = strtoupper(trim($_POST['nonmotor_subtype_select']));
+            $nonmotor_subtype = strtoupper(trim($_POST['nonmotor_subtype'] ?? ''));
+            if ($nonmotor_subtype_select == "ENTER MANUALLY" || $nonmotor_subtype_select == "Enter Manually") {
+                $nonmotor_subtype_select = $nonmotor_subtype;
+            }
+
+            $policy_company = strtoupper(trim($_POST['policy_company'] ?? ''));
+            $policycustom = strtoupper(trim($_POST['policycustom'] ?? ''));
+            if ($policy_company == "Enter Manually") {
+                $policy_company = trim($policycustom);
+            }
+
+            $adviser_name = strtoupper(trim($_POST['adviser_name']));
+            $advisercustom = strtoupper(trim($_POST['advisercustom'] ?? ''));
+            if ($adviser_name == "Enter Manually") {
+                $adviser_name = $advisercustom;
+            }
+
+            $bank_name = strtoupper(trim($_POST['bank_name'] ?? ''));
+            $bank_name_custom = strtoupper(trim($_POST['bank_name_custom'] ?? ''));
+            if ($bank_name == "Enter Manually") {
+                $bank_name = $bank_name_custom;
+            }
+
+            $branch_name = strtoupper(trim($_POST['branch_name'] ?? ''));
+            $branch_name_custom = strtoupper(trim($_POST['branch_name_custom'] ?? ''));
+            if ($branch_name == "Enter Manually") {
+                $branch_name = $branch_name_custom;
+            }
+
+            // Proceed with insertion
+            $sql = "INSERT INTO gic_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, client_type, policy_type, nonmotor_type_select, nonmotor_type, nonmotor_subtype_select, nonmotor_subtype, policy_company, policy_number, amount, pay_mode, cheque_no, bank_name, cheque_dt, remark, contact_alt, email, policycustom,  recovery_amount, policyInput, adv_amount, bal_amount, recov_amount, address, username, fiscal_year, responsibility, form_status, creation_on, birth_date,adviser_name,branch_name,vehicle,year_count,is_long_term) 
+                    VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$client_type', '$policy_type', '$nonmotor_type_select', '$nonmotor_type', '$nonmotor_subtype_select', '$nonmotor_subtype', '$policy_company', '$policy_number', '$amount', '$pay_mode', '$cheque_no', '$bank_name', '$cheque_dt', '$remark', '$contact_alt', '$email', '$policycustom', '$recovery_amount', '$policyInput', '$adv_amount', '$bal_amount', '$recov_amount', '$address', '$username', '$fiscalYear', '$responsibility', '$form_status', '$creation_on', '$birth_date','$adviser_name','$branch_name','$vehicle','$year_count','$is_long_term')";
+            
+            if ($conn->query($sql) === TRUE) {
+                // Mark this submission as processed
+                $_SESSION['gic_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
+                exit();
+            } else {
+                echo "Error: " . $conn->error;
+            }
         }
     }
+}
 
 }
 
@@ -1231,16 +1312,16 @@ $nonmotor_subtype = isset($_POST['nonmotor_subtype']) ? strtoupper(trim($_POST['
     </div>
 
     <!-- Year Count (readonly) -->
-    <div class="col-md-2 field">
+    <!-- <div class="col-md-2 field">
         <label for="yearCount" class="form-label">Policy Duration (Years)</label>
         <input type="text" name="year_count" id="yearCount" class="form-control" readonly>
-    </div>
+    </div> -->
 
     <!-- Is Long Term (readonly) -->
-    <div class="col-md-2 field">
+    <!-- <div class="col-md-2 field">
         <label for="isLongTerm" class="form-label">Long Term Policy</label>
         <input type="text" name="is_long_term" id="isLongTerm" class="form-control" readonly>
-    </div>
+    </div> -->
 </div>
 
 

@@ -229,46 +229,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If no errors, process the form
     if (empty($errors)) {
-        if ($is_edit) {
-            // Update existing entry
-            $sql = "UPDATE mf_entries SET reg_num='$reg_num', policy_date='$policy_date', client_name='$client_name', contact='$contact', mf_type='$mf_type', mf_option='$mf_option', insurance_option='$insurance_option', deadline='$deadline', amount='$amount', referance='$referance', remark='$remark', fiscal_year='$fiscalYear', address='$address',birth_date='$birth_date',form_status='$form_status',update_on='$update_on',day='$day' WHERE id=$id";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: mf");
-                exit();
-            } else {
-                echo "Error updating record: " . $conn->error;
-            }
-        } 
-        elseif ($add_client) {
-            
-             // username for who fill form
-            $username = $_SESSION['username'];
-            
-            // Add a new entry for the same reg_num
-            $sql = "INSERT INTO mf_entries (client_id,reg_num, policy_date,time, client_name, contact, mf_type, mf_option, insurance_option, deadline, amount, referance, remark, fiscal_year, address,username,birth_date,form_status,creation_on,day) 
-                    VALUES ('$client_id','$reg_num', '$policy_date', '$time' , '$client_name', '$contact', '$mf_type', '$mf_option', '$insurance_option', '$deadline', '$amount', '$referance', '$remark', '$fiscalYear', '$address', '$username','$birth_date','$form_status','$creation_on','$day')";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: client");
-                exit();
-            } else {
-                echo "Error: " . $conn->error;
-            }
+    if ($is_edit) {
+        // Update existing entry
+        $sql = "UPDATE mf_entries SET reg_num='$reg_num', policy_date='$policy_date', client_name='$client_name', contact='$contact', mf_type='$mf_type', mf_option='$mf_option', insurance_option='$insurance_option', deadline='$deadline', amount='$amount', referance='$referance', remark='$remark', fiscal_year='$fiscalYear', address='$address',birth_date='$birth_date',form_status='$form_status',update_on='$update_on',day='$day' WHERE id=$id";
+        if ($conn->query($sql) === TRUE) {
+            header("Location: mf");
+            exit();
         } else {
+            echo "Error updating record: " . $conn->error;
+        }
+    } 
+    elseif ($add_client) {
+        $username = $_SESSION['username'];
+
+        // Create unique submission identifier
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
+        
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['mf_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database
+        $check_duplicate = "SELECT id FROM mf_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['mf_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        } else {
+            // Use prepared statement for insertion
+            $sql = "INSERT INTO mf_entries (client_id, reg_num, policy_date, time, client_name, contact, mf_type, mf_option, insurance_option, deadline, amount, referance, remark, fiscal_year, address, username, birth_date, form_status, creation_on, day) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
-             // username for who fill form
-            $username = $_SESSION['username'];
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("isssssssssssssssssss", 
+                $client_id, $reg_num, $policy_date, $time, $client_name, $contact, 
+                $mf_type, $mf_option, $insurance_option, $deadline, $amount, $referance, 
+                $remark, $fiscalYear, $address, $username, $birth_date, $form_status, 
+                $creation_on, $day
+            );
             
-            // Add new entry
-            $sql = "INSERT INTO mf_entries (client_id,reg_num, policy_date,time, client_name, contact, mf_type, mf_option, insurance_option, deadline, amount, referance, remark, fiscal_year, address,username,birth_date,form_status,creation_on,day) 
-                    VALUES ('$client_id','$reg_num', '$policy_date', '$time' , '$client_name', '$contact', '$mf_type', '$mf_option', '$insurance_option', '$deadline', '$amount', '$referance', '$remark', '$fiscalYear', '$address', '$username','$birth_date','$form_status','$creation_on','$day')";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: client");
+            if ($stmt->execute()) {
+                // Mark this submission as processed
+                $_SESSION['mf_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
                 exit();
             } else {
-                echo "Error: " . $conn->error;
+                echo "Error: " . $stmt->error;
+            }
+        }
+    } else {
+        $username = $_SESSION['username'];
+
+        // Create unique submission identifier
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
+        
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['mf_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database
+        $check_duplicate = "SELECT id FROM mf_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['mf_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        } else {
+            // Use prepared statement for insertion
+            $sql = "INSERT INTO mf_entries (client_id, reg_num, policy_date, time, client_name, contact, mf_type, mf_option, insurance_option, deadline, amount, referance, remark, fiscal_year, address, username, birth_date, form_status, creation_on, day) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("isssssssssssssssssss", 
+                $client_id, $reg_num, $policy_date, $time, $client_name, $contact, 
+                $mf_type, $mf_option, $insurance_option, $deadline, $amount, $referance, 
+                $remark, $fiscalYear, $address, $username, $birth_date, $form_status, 
+                $creation_on, $day
+            );
+            
+            if ($stmt->execute()) {
+                // Mark this submission as processed
+                $_SESSION['mf_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
+                exit();
+            } else {
+                echo "Error: " . $stmt->error;
             }
         }
     }
+}
 }
 ?>
 

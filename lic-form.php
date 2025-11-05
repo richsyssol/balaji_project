@@ -236,131 +236,169 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     // If no errors, process the form
-    if (empty($errors)) {
-
+   if (empty($errors)) {
+    if ($is_edit) {
+        // Ensure $colle_policy_num is JSON encoded for storage
+        if (!empty($colle_policy_num) && is_array($colle_policy_num)) {
+            $colle_policy_num_json = json_encode($colle_policy_num);
+        } else {
+            $colle_policy_num_json = json_encode([]);
+        }
     
-        if ($is_edit) {
-            // Ensure $colle_policy_num is JSON encoded for storage
-            if (!empty($colle_policy_num) && is_array($colle_policy_num)) {
-                $colle_policy_num_json = json_encode($colle_policy_num); // Convert array to JSON string
-            } else {
-                $colle_policy_num_json = json_encode([]); // Handle empty case as an empty JSON array
-            }
-        
-            // Update existing entry
-            $sql = "UPDATE lic_entries SET 
-                        reg_num='$reg_num', 
-                        policy_date='$policy_date', 
-                        client_name='$client_name', 
-                        contact='$contact', 
-                        policy_no='$policy_no', 
-                        policy_amt='$policy_amt', 
-                        pay_mode='$pay_mode', 
-                        inv_status='$inv_status', 
-                        cheque_no='$cheque_no', 
-                        bank_name='$bank_name', 
-                        check_dt='$check_dt', 
-                        remark='$remark', 
-                        policy_num='$policy_num', 
-                        work_status='$work_status', 
-                        address='$address', 
-                        recov_amount='$recov_amount',
-                        job_type='$job_type',
-                        fiscal_year='$fiscalYear',
-                        birth_date='$birth_date',
-                        form_status='$form_status',
-                        update_on='$update_on',
-                        collection_job='$collection_job',
-                        time='$time',
-                        colle_policy_num='$colle_policy_num_json', -- Use the JSON string here
-                        adviser='$adviser',
-                        our_agency_amt='$our_agency_amt',
-                        other_agency_amt='$other_agency_amt', 
-                        branch_name='$branch_name' 
-                    WHERE id=$id";
-        
-            if ($conn->query($sql) === TRUE) {
-                header("Location: lic");
-                exit();
-            } else {
-                echo "Error updating record: " . $conn->error;
-            }
+        // Update existing entry
+        $sql = "UPDATE lic_entries SET 
+                    reg_num='$reg_num', 
+                    policy_date='$policy_date', 
+                    client_name='$client_name', 
+                    contact='$contact', 
+                    policy_no='$policy_no', 
+                    policy_amt='$policy_amt', 
+                    pay_mode='$pay_mode', 
+                    inv_status='$inv_status', 
+                    cheque_no='$cheque_no', 
+                    bank_name='$bank_name', 
+                    check_dt='$check_dt', 
+                    remark='$remark', 
+                    policy_num='$policy_num', 
+                    work_status='$work_status', 
+                    address='$address', 
+                    recov_amount='$recov_amount',
+                    job_type='$job_type',
+                    fiscal_year='$fiscalYear',
+                    birth_date='$birth_date',
+                    form_status='$form_status',
+                    update_on='$update_on',
+                    collection_job='$collection_job',
+                    time='$time',
+                    colle_policy_num='$colle_policy_num_json',
+                    adviser='$adviser',
+                    our_agency_amt='$our_agency_amt',
+                    other_agency_amt='$other_agency_amt', 
+                    branch_name='$branch_name' 
+                WHERE id=$id";
+    
+        if ($conn->query($sql) === TRUE) {
+            header("Location: lic");
+            exit();
+        } else {
+            echo "Error updating record: " . $conn->error;
         }
+    }
+    elseif ($_GET['action']==='add_new') {
+        if (!empty($colle_policy_num) && is_array($colle_policy_num)) {
+            $colle_policy_num_json = json_encode($colle_policy_num);
+        } else {
+            $colle_policy_num_json = json_encode([]);
+        }
+
+        $username = $_SESSION['username'];
+
+        // Create unique submission identifier
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
         
-        elseif  ($_GET['action']==='add_new') {
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['lic_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
 
-        
+        // Check for duplicate entry in database
+        $check_duplicate = "SELECT id FROM lic_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
 
-            if (!empty($colle_policy_num) && is_array($colle_policy_num)) {
-                $colle_policy_num_json = json_encode($colle_policy_num); // Convert array to JSON string
-            } else {
-                $colle_policy_num_json = json_encode([]); // Handle empty case as an empty JSON array
-            }
-
-        
-
-            
-             // username for who fill form
-            $username = $_SESSION['username'];
-
-            
-            // Prepared statement to avoid SQL injection and syntax errors
-            $sql = "INSERT INTO lic_entries (client_id,reg_num, `policy_date`, client_name, contact, policy_no, policy_amt, pay_mode, inv_status , cheque_no , bank_name, check_dt, remark, policy_num, work_status, job_type, `address`, recov_amount, username, fiscal_year,birth_date,form_status,creation_on,collection_job,`time`,colle_policy_num,adviser,our_agency_amt,other_agency_amt,branch_name) 
-                    VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?,?,?,?)";
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['lic_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        } else {
+            // Use prepared statement for insertion
+            $sql = "INSERT INTO lic_entries (client_id, reg_num, policy_date, client_name, contact, policy_no, policy_amt, pay_mode, inv_status, cheque_no, bank_name, check_dt, remark, policy_num, work_status, job_type, address, recov_amount, username, fiscal_year, birth_date, form_status, creation_on, collection_job, time, colle_policy_num, adviser, our_agency_amt, other_agency_amt, branch_name) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("isssssssssssssssssssssssssssss",$client_id, $reg_num, $policy_date, $client_name, $contact, $policy_no, $policy_amt, $pay_mode, $inv_status, $cheque_no, $bank_name, $check_dt, $remark, $policy_num, $work_status, $job_type, $address, $recov_amount, $username, $fiscalYear,$birth_date,$form_status,$creation_on,$collection_job,$time,$colle_policy_num_json,$adviser,$our_agency_amt,$other_agency_amt,$branch_name);
-
-        
-
-
-
-            
-            
-            if ($stmt->execute()) {
-            
-                header("Location: client");
-                exit();
-            } else {
-            
-                echo "Error: " . $stmt->error;
-            }
-            
-        }
-        else {
-        
-            
-            if (!empty($colle_policy_num) && is_array($colle_policy_num)) {
-                $colle_policy_num_json = json_encode($colle_policy_num); // Convert array to JSON string
-            } else {
-                $colle_policy_num_json = json_encode([]); // Handle empty case as an empty JSON array
-            }
-
-        
-
-            
-             // username for who fill form
-            $username = $_SESSION['username'];
-
-            
-            // Prepared statement to avoid SQL injection and syntax errors
-            $sql = "INSERT INTO lic_entries (client_id,reg_num, `policy_date`, client_name, contact, policy_no, policy_amt, pay_mode, inv_status , cheque_no , bank_name, check_dt, remark, policy_num, work_status, job_type, `address`, recov_amount, username, fiscal_year,birth_date,form_status,creation_on,collection_job,`time`,colle_policy_num,adviser,our_agency_amt,other_agency_amt,branch_name) 
-                    VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?,?,?,?)";
-            
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("isssssssssssssssssssssssssssss",$client_id, $reg_num, $policy_date, $client_name, $contact, $policy_no, $policy_amt, $pay_mode, $inv_status, $cheque_no, $bank_name, $check_dt, $remark, $policy_num, $work_status, $job_type, $address, $recov_amount, $username, $fiscalYear,$birth_date,$form_status,$creation_on,$collection_job,$time,$colle_policy_num_json,$adviser,$our_agency_amt,$other_agency_amt,$branch_name);
-
+            $stmt->bind_param("isssssssssssssssssssssssssssss", 
+                $client_id, $reg_num, $policy_date, $client_name, $contact, $policy_no, 
+                $policy_amt, $pay_mode, $inv_status, $cheque_no, $bank_name, $check_dt, 
+                $remark, $policy_num, $work_status, $job_type, $address, $recov_amount, 
+                $username, $fiscalYear, $birth_date, $form_status, $creation_on, 
+                $collection_job, $time, $colle_policy_num_json, $adviser, $our_agency_amt, 
+                $other_agency_amt, $branch_name
+            );
             
             if ($stmt->execute()) {
-            
-                header("Location: client");
+                // Mark this submission as processed
+                $_SESSION['lic_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
                 exit();
             } else {
-            
                 echo "Error: " . $stmt->error;
             }
         }
     }
+    else {
+        if (!empty($colle_policy_num) && is_array($colle_policy_num)) {
+            $colle_policy_num_json = json_encode($colle_policy_num);
+        } else {
+            $colle_policy_num_json = json_encode([]);
+        }
+
+        $username = $_SESSION['username'];
+
+        // Create unique submission identifier
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
+        
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['lic_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database
+        $check_duplicate = "SELECT id FROM lic_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['lic_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        } else {
+            // Use prepared statement for insertion
+            $sql = "INSERT INTO lic_entries (client_id, reg_num, policy_date, client_name, contact, policy_no, policy_amt, pay_mode, inv_status, cheque_no, bank_name, check_dt, remark, policy_num, work_status, job_type, address, recov_amount, username, fiscal_year, birth_date, form_status, creation_on, collection_job, time, colle_policy_num, adviser, our_agency_amt, other_agency_amt, branch_name) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("isssssssssssssssssssssssssssss", 
+                $client_id, $reg_num, $policy_date, $client_name, $contact, $policy_no, 
+                $policy_amt, $pay_mode, $inv_status, $cheque_no, $bank_name, $check_dt, 
+                $remark, $policy_num, $work_status, $job_type, $address, $recov_amount, 
+                $username, $fiscalYear, $birth_date, $form_status, $creation_on, 
+                $collection_job, $time, $colle_policy_num_json, $adviser, $our_agency_amt, 
+                $other_agency_amt, $branch_name
+            );
+            
+            if ($stmt->execute()) {
+                // Mark this submission as processed
+                $_SESSION['lic_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
+                exit();
+            } else {
+                echo "Error: " . $stmt->error;
+            }
+        }
+    }
+}
 }
 ?>
 

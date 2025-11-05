@@ -1,16 +1,4 @@
 <?php 
-// session_start(); // Start the session
-
-
-
-
-// // Check if user is logged in
-// if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true ) {
-//     // Redirect to login page if not logged in
-//     header("Location: login.php"); // Adjust path if needed
-//     exit(); // Ensure no further code is executed
-// }
-// else{
     include 'include/header.php'; 
     include 'include/head.php'; 
     include 'session_check.php';
@@ -128,49 +116,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If no errors, process the form
     if (empty($errors)) {
-        if ($is_edit) {
-            // Update existing entry
-            $sql = "UPDATE tasks SET task_date='$task_date', task_time='$task_time', username='$username', assign_by='$assign_by', task='$task', contact_to='$contact_to', contact_no='$contact_no', priority='$priority', report_to='$report_to', shift_task='$shift_task',recurrence_type='$recurrence_type',contact='$contact',task_end_date='$task_end_date', weekly_value='$weekly_value', monthly_value='$monthly_value',quarterly_value='$quarterly_value',yearly_value='$yearly_value' WHERE id=$id";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: todo");
-                exit();
-            } else {
-                echo "Error updating record: " . $conn->error;
-            }
-        } 
-        else {
-
-            // enter manualy car type
-            $username = $_POST['username'];
-            $custom_username = strtoupper($_POST['custom_username']) ?? '';
-            
-            // If 'Enter Manually' is selected, use the custom type
-            if ($username == "Enter Manually") {
-                $username = $custom_username;
-            }
-
-            // enter manualy car type
-            $assign_by = $_POST['assign_by'];
-            $custom_assign_by = strtoupper($_POST['custom_assign_by']) ?? '';
-            
-            // If 'Enter Manually' is selected, use the custom type
-            if ($assign_by == "Enter Manually") {
-                $assign_by = $custom_assign_by;
-            }
-
-
-            // add task
-            $sql = "INSERT INTO tasks (task_date, task_time,username,assign_by, task, contact_to, contact_no, priority, report_to, shift_task, recurrence_type, contact, task_end_date, weekly_value, monthly_value,quarterly_value,yearly_value) 
-                    VALUES ('$task_date', '$task_time', '$username' ,'$assign_by', '$task', '$contact_to', '$contact_no', '$priority', '$report_to', '$shift_task', '$recurrence_type', '$contact', '$task_end_date', '$weekly_value', '$monthly_value','$quarterly_value','$yearly_value')";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: todo");
-                exit();
-            } else {
-                echo "Error: " . $conn->error;
-            }
-        } 
+    if ($is_edit) {
+        // Update existing entry
+        $sql = "UPDATE tasks SET task_date='$task_date', task_time='$task_time', username='$username', assign_by='$assign_by', task='$task', contact_to='$contact_to', contact_no='$contact_no', priority='$priority', report_to='$report_to', shift_task='$shift_task',recurrence_type='$recurrence_type',contact='$contact',task_end_date='$task_end_date', weekly_value='$weekly_value', monthly_value='$monthly_value',quarterly_value='$quarterly_value',yearly_value='$yearly_value' WHERE id=$id";
+        if ($conn->query($sql) === TRUE) {
+            header("Location: todo");
+            exit();
+        } else {
+            echo "Error updating record: " . $conn->error;
+        }
+    } 
+    else {
+        // Create unique submission identifier FIRST
+        $submission_hash = md5($task_date . $task_time . $username . $task . $contact_no);
         
-    }
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['tasks_processed_submissions'][$submission_hash])) {
+            header("Location: todo?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database FIRST
+        $check_duplicate = "SELECT id FROM tasks WHERE task_date = '$task_date' AND task_time = '$task_time' AND username = '$username' AND task = '$task' AND contact_no = '$contact_no'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['tasks_processed_submissions'][$submission_hash] = true;
+            header("Location: todo?success=1");
+            exit();
+        }
+
+        // enter manualy car type
+        $username = $_POST['username'];
+        $custom_username = strtoupper($_POST['custom_username']) ?? '';
+        
+        // If 'Enter Manually' is selected, use the custom type
+        if ($username == "Enter Manually") {
+            $username = $custom_username;
+        }
+
+        // enter manualy car type
+        $assign_by = $_POST['assign_by'];
+        $custom_assign_by = strtoupper($_POST['custom_assign_by']) ?? '';
+        
+        // If 'Enter Manually' is selected, use the custom type
+        if ($assign_by == "Enter Manually") {
+            $assign_by = $custom_assign_by;
+        }
+
+        // add task
+        $sql = "INSERT INTO tasks (task_date, task_time, username, assign_by, task, contact_to, contact_no, priority, report_to, shift_task, recurrence_type, contact, task_end_date, weekly_value, monthly_value, quarterly_value, yearly_value) 
+                VALUES ('$task_date', '$task_time', '$username', '$assign_by', '$task', '$contact_to', '$contact_no', '$priority', '$report_to', '$shift_task', '$recurrence_type', '$contact', '$task_end_date', '$weekly_value', '$monthly_value', '$quarterly_value', '$yearly_value')";
+        
+        if ($conn->query($sql) === TRUE) {
+            // Mark this submission as processed
+            $_SESSION['tasks_processed_submissions'][$submission_hash] = true;
+            
+            $last_id = $conn->insert_id;
+            $_SESSION['last_submission'] = $last_id;
+            $_SESSION['submission_time'] = time();
+            
+            header("Location: todo?success=1&id=" . $last_id);
+            exit();
+        } else {
+            echo "Error: " . $conn->error;
+        }
+    } 
+}
 }
 
 ?>

@@ -185,187 +185,209 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If no errors, process the form
     if (empty($errors)) {
-
-        if ($is_edit) {
-            $aadhar_no = $_POST['aadhar_no'];
-            $pan_no = $_POST['pan_no'];
-            
-            $error_message = ""; // Initialize error message
+    if ($is_edit) {
+        $aadhar_no = $_POST['aadhar_no'];
+        $pan_no = $_POST['pan_no'];
         
-            if (!empty($aadhar_no)) {
-                // Check if the Aadhar number already exists, excluding the current ID
-                $checkAadharQuery = "SELECT * FROM client WHERE aadhar_no = ? AND id != ?";
-                $stmt = $conn->prepare($checkAadharQuery);
-                $stmt->bind_param("si", $aadhar_no, $id); 
-                $stmt->execute();
-                $result = $stmt->get_result();
-        
-                if ($result && $result->num_rows > 0) {
-                    $error_message = "This Aadhar number is already registered.";
-                }
-                $stmt->close();
+        $error_message = ""; // Initialize error message
+    
+        if (!empty($aadhar_no)) {
+            // Check if the Aadhar number already exists, excluding the current ID
+            $checkAadharQuery = "SELECT * FROM client WHERE aadhar_no = ? AND id != ?";
+            $stmt = $conn->prepare($checkAadharQuery);
+            $stmt->bind_param("si", $aadhar_no, $id); 
+            $stmt->execute();
+            $result = $stmt->get_result();
+    
+            if ($result && $result->num_rows > 0) {
+                $error_message = "This Aadhar number is already registered.";
             }
-        
-            if (empty($error_message) && !empty($pan_no)) {
-                // Check if the PAN number already exists, excluding the current ID
-                $checkPanQuery = "SELECT * FROM client WHERE pan_no = ? AND id != ?";
-                $stmt = $conn->prepare($checkPanQuery);
-                $stmt->bind_param("si", $pan_no, $id); 
-                $stmt->execute();
-                $result = $stmt->get_result();
-        
-                if ($result && $result->num_rows > 0) {
-                    $error_message = "This PAN number is already registered.";
-                }
-                $stmt->close();
-            }
-        
-            // Only proceed with the update if there is no error
-            if (empty($error_message)) {
-
-                $address = $_POST['address'] ?? '';
-                $addressCustom = $_POST['addressCustom'] ?? '';
-                
-                $inquiry = $_POST['inquiry'] ?? '';
-                $inquiryCustomtype = $_POST['inquiryCustomtype'] ?? '';
-        
-                // If 'Enter Manually' is selected, use the custom input
-                if ($address == "Enter Manually") {
-                    $address = strtoupper(trim($addressCustom));
-                }
-
-                if ($inquiry == "Enter Manually") {
-                    $inquiry = strtoupper(trim($inquiryCustomtype));
-                }
-        
-                // Fetch old contact number before updating
-                $old_contact = "";
-                $fetch_old_contact_query = "SELECT contact FROM client WHERE id = ?";
-                $stmt = $conn->prepare($fetch_old_contact_query);
-                $stmt->bind_param("i", $id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                if ($row = $result->fetch_assoc()) {
-                    $old_contact = $row['contact'];
-                }
-                $stmt->close();
-        
-                // Update client table
-                $sql = "UPDATE client SET reg_num='$reg_num', policy_date='$policy_date', time='$time', client_name='$client_name', 
-                                client_type='$client_type', address='$address', contact='$contact', contact_alt='$contact_alt', 
-                                birth_date='$birth_date', anniversary_date='$anniversary_date', email='$email', gst_no='$gst_no', 
-                                pan_no='$pan_no', aadhar_no='$aadhar_no', inquiry='$inquiry', reference='$reference', 
-                                age='$age', tag='$tag', pincode='$pincode' WHERE id=$id";
-        
-                $stmt = $conn->prepare($sql);
-                
-                
-        
-                if ($stmt->execute()) {
-                    // If contact or other details are changed, update them in all related tables
-                    if ($old_contact !== $contact || $old_client_name !== $client_name || $old_address !== $address || $old_birth_date !== $birth_date) {
-                        // Update gic_entries table separately since it has additional fields
-                        $update_gic_query = "UPDATE gic_entries SET client_name = ?, client_type = ?, address = ?, contact_alt = ?, contact = ?, birth_date = ?, email = ? WHERE client_id = ?";
-                        $stmt_gic = $conn->prepare($update_gic_query);
-                        $stmt_gic->bind_param("sssssssi", $client_name, $client_type, $address, $contact_alt, $contact, $birth_date, $email, $id);
-                        $stmt_gic->execute();
-                        $stmt_gic->close();
-                
-                        // Tables with common fields
-                        $tables = ['mf_entries', 'bmds_entries', 'lic_entries', 'rto_entries'];
-                        foreach ($tables as $table) {
-                            $update_query = "UPDATE $table SET client_name = ?, address = ?, contact = ?, birth_date = ? WHERE client_id = ?";
-                            $stmt2 = $conn->prepare($update_query);
-                            $stmt2->bind_param("ssssi", $client_name, $address, $contact, $birth_date, $id);
-                            $stmt2->execute();
-                            $stmt2->close();
-                        }
-                    }
-                
-                    header("Location: client");
-                    exit();
-                } else {
-                    echo "Error updating record: " . $stmt->error;
-                }
-                
-                $stmt->close();
-            } else {
-                echo $error_message; // Display the error message
-            }
-        }  
-        
-        elseif ($add_new) {
-
-            // username for who filled the form
-            $username = $_SESSION['username'];
-            $aadhar_no = $_POST['aadhar_no'];
-            $pan_no = $_POST['pan_no'];
-        
-            $error_message = ""; // Initialize error message
-        
-            if (!empty($aadhar_no)) {
-                // Check if the Aadhar number already exists
-                $checkAadharQuery = "SELECT client_name , contact FROM client WHERE aadhar_no = ?";
-                $stmt = $conn->prepare($checkAadharQuery);
-                $stmt->bind_param("s", $aadhar_no);
-                $stmt->execute();
-                $result = $stmt->get_result();
-        
-                if ($result && $result->num_rows > 0) {
-                    $row = $result->fetch_assoc();
-                    $error_message = "This Aadhar number is already registered for client: <strong>" . htmlspecialchars($row['client_name']) . '/' . htmlspecialchars($row['contact']) . "</strong>.";
-                }
-                $stmt->close();
-            }
-        
-            if (empty($error_message) && !empty($pan_no)) {
-                // Check if the PAN number already exists
-                $checkPanQuery = "SELECT client_name , contact FROM client WHERE pan_no = ?";
-                $stmt = $conn->prepare($checkPanQuery);
-                $stmt->bind_param("s", $pan_no);
-                $stmt->execute();
-                $result = $stmt->get_result();
-        
-                if ($result && $result->num_rows > 0) {
-                    $row = $result->fetch_assoc();
-                    $error_message = "This PAN number is already registered for client: <strong>" . htmlspecialchars($row['client_name'])  . '/' . htmlspecialchars($row['contact']) . "</strong>.";
-                }
-                $stmt->close();
-            }
-        
-            // Only proceed with insertion if there is no error
-            if (empty($error_message)) {
-                $address = $_POST['address'] ?? '';
-                $addressCustom = $_POST['addressCustom'] ?? '';
-                $inquiry = $_POST['inquiry'] ?? '';
-                $inquiryCustomtype = $_POST['inquiryCustomtype'] ?? '';
-                $client_type = $_POST['client_type'] ?? '';
-        
-                // If 'Enter Manually' is selected, use the custom input
-                if ($address == "Enter Manually") {
-                    $address = strtoupper(trim($addressCustom));
-                }
-
-                if ($inquiry == "Enter Manually") {
-                    $inquiry = strtoupper(trim($inquiryCustomtype));
-                }
-                
-        
-                // Add a new entry for the same reg_num
-                $sql = "INSERT INTO client (reg_num, policy_date, time, client_name, client_type, address, contact, contact_alt, birth_date, anniversary_date, email, gst_no, pan_no, aadhar_no, inquiry, reference, age, tag, pincode) 
-                        VALUES ('$reg_num', '$policy_date', '$time', '$client_name', '$client_type', '$address', '$contact', '$contact_alt', '$birth_date', '$anniversary_date', '$email', '$gst_no', '$pan_no', '$aadhar_no', '$inquiry', '$reference', '$age', '$tag', '$pincode')";
-                
-                if ($conn->query($sql) === TRUE) {
-                    header("Location: client");
-                    exit();
-                } else {
-                    echo "Error: " . $conn->error;
-                }
-            } 
+            $stmt->close();
         }
-         
+    
+        if (empty($error_message) && !empty($pan_no)) {
+            // Check if the PAN number already exists, excluding the current ID
+            $checkPanQuery = "SELECT * FROM client WHERE pan_no = ? AND id != ?";
+            $stmt = $conn->prepare($checkPanQuery);
+            $stmt->bind_param("si", $pan_no, $id); 
+            $stmt->execute();
+            $result = $stmt->get_result();
+    
+            if ($result && $result->num_rows > 0) {
+                $error_message = "This PAN number is already registered.";
+            }
+            $stmt->close();
+        }
+    
+        // Only proceed with the update if there is no error
+        if (empty($error_message)) {
+
+            $address = $_POST['address'] ?? '';
+            $addressCustom = $_POST['addressCustom'] ?? '';
+            
+            $inquiry = $_POST['inquiry'] ?? '';
+            $inquiryCustomtype = $_POST['inquiryCustomtype'] ?? '';
+    
+            // If 'Enter Manually' is selected, use the custom input
+            if ($address == "Enter Manually") {
+                $address = strtoupper(trim($addressCustom));
+            }
+
+            if ($inquiry == "Enter Manually") {
+                $inquiry = strtoupper(trim($inquiryCustomtype));
+            }
+    
+            // Fetch old contact number before updating
+            $old_contact = "";
+            $fetch_old_contact_query = "SELECT contact FROM client WHERE id = ?";
+            $stmt = $conn->prepare($fetch_old_contact_query);
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                $old_contact = $row['contact'];
+            }
+            $stmt->close();
+    
+            // Update client table
+            $sql = "UPDATE client SET reg_num='$reg_num', policy_date='$policy_date', time='$time', client_name='$client_name', 
+                            client_type='$client_type', address='$address', contact='$contact', contact_alt='$contact_alt', 
+                            birth_date='$birth_date', anniversary_date='$anniversary_date', email='$email', gst_no='$gst_no', 
+                            pan_no='$pan_no', aadhar_no='$aadhar_no', inquiry='$inquiry', reference='$reference', 
+                            age='$age', tag='$tag', pincode='$pincode' WHERE id=$id";
+    
+            $stmt = $conn->prepare($sql);
+            
+            if ($stmt->execute()) {
+                // If contact or other details are changed, update them in all related tables
+                if ($old_contact !== $contact || $old_client_name !== $client_name || $old_address !== $address || $old_birth_date !== $birth_date) {
+                    // Update gic_entries table separately since it has additional fields
+                    $update_gic_query = "UPDATE gic_entries SET client_name = ?, client_type = ?, address = ?, contact_alt = ?, contact = ?, birth_date = ?, email = ? WHERE client_id = ?";
+                    $stmt_gic = $conn->prepare($update_gic_query);
+                    $stmt_gic->bind_param("sssssssi", $client_name, $client_type, $address, $contact_alt, $contact, $birth_date, $email, $id);
+                    $stmt_gic->execute();
+                    $stmt_gic->close();
+            
+                    // Tables with common fields
+                    $tables = ['mf_entries', 'bmds_entries', 'lic_entries', 'rto_entries'];
+                    foreach ($tables as $table) {
+                        $update_query = "UPDATE $table SET client_name = ?, address = ?, contact = ?, birth_date = ? WHERE client_id = ?";
+                        $stmt2 = $conn->prepare($update_query);
+                        $stmt2->bind_param("ssssi", $client_name, $address, $contact, $birth_date, $id);
+                        $stmt2->execute();
+                        $stmt2->close();
+                    }
+                }
+            
+                header("Location: client");
+                exit();
+            } else {
+                echo "Error updating record: " . $stmt->error;
+            }
+            
+            $stmt->close();
+        } else {
+            echo $error_message; // Display the error message
+        }
+    }  
+    
+    elseif ($add_new) {
+        // username for who filled the form
+        $username = $_SESSION['username'];
+        $aadhar_no = $_POST['aadhar_no'];
+        $pan_no = $_POST['pan_no'];
+    
+        // Create unique submission identifier FIRST
+        $submission_hash = md5($reg_num . $client_name . $contact . $creation_on . $username);
         
-    }
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['client_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database FIRST (based on key fields)
+        $check_duplicate = "SELECT id FROM client WHERE reg_num = '$reg_num' AND client_name = '$client_name' AND contact = '$contact' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['client_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        }
+
+        $error_message = ""; // Initialize error message
+    
+        // Now check for Aadhar/PAN duplicates only if general duplicate check passes
+        if (!empty($aadhar_no)) {
+            // Check if the Aadhar number already exists
+            $checkAadharQuery = "SELECT client_name , contact FROM client WHERE aadhar_no = ?";
+            $stmt = $conn->prepare($checkAadharQuery);
+            $stmt->bind_param("s", $aadhar_no);
+            $stmt->execute();
+            $result = $stmt->get_result();
+    
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $error_message = "This Aadhar number is already registered for client: <strong>" . htmlspecialchars($row['client_name']) . '/' . htmlspecialchars($row['contact']) . "</strong>.";
+            }
+            $stmt->close();
+        }
+    
+        if (empty($error_message) && !empty($pan_no)) {
+            // Check if the PAN number already exists
+            $checkPanQuery = "SELECT client_name , contact FROM client WHERE pan_no = ?";
+            $stmt = $conn->prepare($checkPanQuery);
+            $stmt->bind_param("s", $pan_no);
+            $stmt->execute();
+            $result = $stmt->get_result();
+    
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $error_message = "This PAN number is already registered for client: <strong>" . htmlspecialchars($row['client_name'])  . '/' . htmlspecialchars($row['contact']) . "</strong>.";
+            }
+            $stmt->close();
+        }
+    
+        // Only proceed with insertion if there is no error
+        if (empty($error_message)) {
+            $address = $_POST['address'] ?? '';
+            $addressCustom = $_POST['addressCustom'] ?? '';
+            $inquiry = $_POST['inquiry'] ?? '';
+            $inquiryCustomtype = $_POST['inquiryCustomtype'] ?? '';
+            $client_type = $_POST['client_type'] ?? '';
+    
+            // If 'Enter Manually' is selected, use the custom input
+            if ($address == "Enter Manually") {
+                $address = strtoupper(trim($addressCustom));
+            }
+
+            if ($inquiry == "Enter Manually") {
+                $inquiry = strtoupper(trim($inquiryCustomtype));
+            }
+            
+    
+            // Add a new entry for the same reg_num
+            $sql = "INSERT INTO client (reg_num, policy_date, time, client_name, client_type, address, contact, contact_alt, birth_date, anniversary_date, email, gst_no, pan_no, aadhar_no, inquiry, reference, age, tag, pincode) 
+                    VALUES ('$reg_num', '$policy_date', '$time', '$client_name', '$client_type', '$address', '$contact', '$contact_alt', '$birth_date', '$anniversary_date', '$email', '$gst_no', '$pan_no', '$aadhar_no', '$inquiry', '$reference', '$age', '$tag', '$pincode')";
+            
+            if ($conn->query($sql) === TRUE) {
+                // Mark this submission as processed
+                $_SESSION['client_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
+                exit();
+            } else {
+                echo "Error: " . $conn->error;
+            }
+        } 
+    } 
+}
 }
 ?>
 

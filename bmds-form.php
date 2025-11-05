@@ -125,6 +125,7 @@ elseif (isset($_GET['action']) && $_GET['action'] === 'add_new') {
         $result = $conn->query("SELECT * FROM bmds_entries WHERE id=$id");
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
+            $client_id = $row['client_id'];
             $client_name = strtoupper($row['client_name']);
             $contact = $row['contact'];
             $reg_num = $row['reg_num'];
@@ -308,106 +309,144 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If no errors, process the form
     if (empty($errors)) {
-        if ($is_edit) {
+    if ($is_edit) {
+        $car_type = $_POST['car_type'] === 'Enter Manually' ? $_POST['custom_car_type'] : $_POST['car_type'];
+        $llr_class = $_POST['llr_class'] === 'Enter Manually' ? $_POST['custom_llr_class'] : $_POST['llr_class'];
+        $city = $_POST['city'] === 'Enter Manually' ? $_POST['custom_city'] : $_POST['city'];
 
-            $car_type = $_POST['car_type'] === 'Enter Manually' ? $_POST['custom_car_type'] : $_POST['car_type'];
-            $llr_class = $_POST['llr_class'] === 'Enter Manually' ? $_POST['custom_llr_class'] : $_POST['llr_class'];
-            $city = $_POST['city'] === 'Enter Manually' ? $_POST['custom_city'] : $_POST['city'];
+        // Update existing entry
+        $sql = "UPDATE bmds_entries SET reg_num='$reg_num', policy_date='$policy_date', client_name='$client_name', contact='$contact', policy_duration='$policy_duration', start_date='$start_date', end_date='$end_date', car_type='$car_type', ride='$ride' , amount='$amount' , remark='$remark', adv_amount='$adv_amount', bal_amount='$bal_amount', recov_amount='$recov_amount', responsibility='$responsibility', address='$address',fiscal_year='$fiscalYear',birth_date='$birth_date',form_status='$form_status',update_on='$update_on',start_time='$start_time',end_time='$end_time',bmds_type='$bmds_type',llr_type='$llr_type',mdl_type='$mdl_type',class='$class',llr_class='$llr_class',test_date='$test_date',sr_num='$sr_num',city='$city' WHERE id=$id";
+        if ($conn->query($sql) === TRUE) {
+            header("Location: bmds");
+            exit();
+        } else {
+            echo "Error updating record: " . $conn->error;
+        }
+    } 
+    elseif ($add_new) {
+        $username = $_SESSION['username'];
+        $original_id = $_GET['id']; // ID of the old policy
 
-            // Update existing entry
-            $sql = "UPDATE bmds_entries SET reg_num='$reg_num', policy_date='$policy_date', client_name='$client_name', contact='$contact', policy_duration='$policy_duration', start_date='$start_date', end_date='$end_date', car_type='$car_type', ride='$ride' , amount='$amount' , remark='$remark', adv_amount='$adv_amount', bal_amount='$bal_amount', recov_amount='$recov_amount', responsibility='$responsibility', address='$address',fiscal_year='$fiscalYear',birth_date='$birth_date',form_status='$form_status',update_on='$update_on',start_time='$start_time',end_time='$end_time',bmds_type='$bmds_type',llr_type='$llr_type',mdl_type='$mdl_type',class='$class',llr_class='$llr_class',test_date='$test_date',sr_num='$sr_num',city='$city' WHERE id=$id";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: bmds");
-                exit();
-            } else {
-                echo "Error updating record: " . $conn->error;
-            }
-        } 
-        elseif  ($add_new) {
+        // Delete the old policy record since it's being renewed
+        $deleteOldPolicy = "DELETE FROM bmds_entries WHERE id = '$original_id'";
+        $conn->query($deleteOldPolicy);
+
+        $car_type = strtoupper(trim($_POST['car_type']));
+        $custom_car_type = strtoupper(trim($_POST['custom_car_type'] ?? ''));
+        if ($car_type == "ENTER MANUALLY") {
+            $car_type = $custom_car_type;
+        }
+
+        $llr_class = strtoupper(trim($_POST['llr_class']));
+        $custom_llr_class = strtoupper(trim($_POST['custom_llr_class'] ?? ''));
+        if ($llr_class == "ENTER MANUALLY") {
+            $llr_class = $custom_llr_class;
+        }
+
+        $city = strtoupper(trim($_POST['city']));
+        $custom_city = strtoupper(trim($_POST['custom_city'] ?? ''));
+        if ($city == "ENTER MANUALLY") {
+            $city = $custom_city;
+        }
+
+        // Create unique submission identifier
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
+        
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['bmds_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database
+        $check_duplicate = "SELECT id FROM bmds_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['bmds_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        } else {
+            // Use regular query with duplicate prevention
+            $sql = "INSERT INTO bmds_entries (reg_num, policy_date, time, client_id, client_name, contact, policy_duration, start_date, end_date, car_type, ride, amount, remark, adv_amount, bal_amount, recov_amount, responsibility, address, username, fiscal_year, birth_date, form_status, creation_on, start_time, end_time, bmds_type, llr_type, mdl_type, class, llr_class, test_date, sr_num, city) 
+                    VALUES ('$reg_num', '$policy_date', '$time', '$client_id', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$car_type', '$ride', '$amount', '$remark', '$adv_amount', '$bal_amount', '$recov_amount', '$responsibility', '$address', '$username', '$fiscalYear', '$birth_date', '$form_status', '$creation_on', '$start_time', '$end_time', '$bmds_type', '$llr_type', '$mdl_type', '$class', '$llr_class', '$test_date', '$sr_num', '$city')";
             
-              // username for who fill form
-            $username = $_SESSION['username'];
-
-            $original_id = $_GET['id']; // ID of the old policy
-
-             // Delete the old policy record since it's being renewed
-            $deleteOldPolicy = "DELETE FROM bmds_entries WHERE id = '$original_id'";
-            $conn->query($deleteOldPolicy);
-
-
-            $car_type = strtoupper(trim($_POST['car_type']));
-            $custom_car_type = strtoupper(trim($_POST['custom_car_type'] ?? ''));
-            if ($car_type == "ENTER MANUALLY") {
-                $car_type = $custom_car_type;
-            }
-
-            $llr_class = strtoupper(trim($_POST['llr_class']));
-            $custom_llr_class = strtoupper(trim($_POST['custom_llr_class'] ?? ''));
-            if ($llr_class == "ENTER MANUALLY") {
-                $llr_class = $custom_llr_class;
-            }
-
-            $city = strtoupper(trim($_POST['city']));
-            $custom_city = strtoupper(trim($_POST['custom_city'] ?? ''));
-            if ($city == "ENTER MANUALLY") {
-                $city = $custom_city;
-            }
-
-            
-            // Add a new payment entry for the same reg_num
-             
-            $sql = "INSERT INTO bmds_entries (reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, car_type , ride , amount, remark,adv_amount,bal_amount,recov_amount, responsibility,address,username,fiscal_year,birth_date,form_status,creation_on,start_time,end_time,bmds_type,llr_type,mdl_type,class,llr_class,test_date,sr_num,city) 
-                    VALUES ('$reg_num', '$policy_date', '$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$car_type', '$ride','$amount', '$remark', '$adv_amount', '$bal_amount' ,'$recov_amount', '$responsibility','$address','$username', '$fiscalYear','$birth_date','$form_status','$creation_on','$start_time','$end_time','$bmds_type','$llr_type','$mdl_type','$class','$llr_class','$test_date','$sr_num','$city')";
             if ($conn->query($sql) === TRUE) {
-                header("Location: client");
+                // Mark this submission as processed
+                $_SESSION['bmds_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
                 exit();
             } else {
                 echo "Error: " . $conn->error;
             }
         }
-        
-        elseif  ($add_client) {
-            
-             // username for who fill form
-            $username = $_SESSION['username'];
-
-            // enter manualy car type
-            $car_type = $_POST['car_type'];
-            $custom_car_type = $_POST['custom_car_type'] ?? '';
-            
-            $car_type = strtoupper(trim($_POST['car_type']));
-            $custom_car_type = strtoupper(trim($_POST['custom_car_type'] ?? ''));
-            if ($car_type == "ENTER MANUALLY") {
-                $car_type = $custom_car_type;
-            }
-
-            $llr_class = strtoupper(trim($_POST['llr_class']));
-            $custom_llr_class = strtoupper(trim($_POST['custom_llr_class'] ?? ''));
-            if ($llr_class == "ENTER MANUALLY") {
-                $llr_class = $custom_llr_class;
-            }
-
-            $city = strtoupper(trim($_POST['city']));
-            $custom_city = strtoupper(trim($_POST['custom_city'] ?? ''));
-            if ($city == "ENTER MANUALLY") {
-                $city = $custom_city;
-            }
-
-
-            
-            // Add a new payment entry for the same reg_num
-             
-            $sql = "INSERT INTO bmds_entries (client_id,reg_num, policy_date,time, client_name, contact, policy_duration, start_date, end_date, car_type , ride , amount, remark,adv_amount,bal_amount,recov_amount, responsibility,address,username,fiscal_year,birth_date,form_status,creation_on,start_time,end_time,bmds_type,llr_type,mdl_type,class,llr_class,test_date,sr_num,city) 
-                    VALUES ('$client_id','$reg_num', '$policy_date', '$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$car_type', '$ride','$amount', '$remark', '$adv_amount', '$bal_amount' ,'$recov_amount', '$responsibility','$address','$username', '$fiscalYear','$birth_date','$form_status','$creation_on','$start_time','$end_time','$bmds_type','$llr_type','$mdl_type','$class','$llr_class','$test_date','$sr_num','$city')";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: client");
-                exit();
-            } else {
-                echo "Error: " . $conn->error;
-            }
-        }
-        
     }
+    elseif ($add_client) {
+        $username = $_SESSION['username'];
+
+        $car_type = strtoupper(trim($_POST['car_type']));
+        $custom_car_type = strtoupper(trim($_POST['custom_car_type'] ?? ''));
+        if ($car_type == "ENTER MANUALLY") {
+            $car_type = $custom_car_type;
+        }
+
+        $llr_class = strtoupper(trim($_POST['llr_class']));
+        $custom_llr_class = strtoupper(trim($_POST['custom_llr_class'] ?? ''));
+        if ($llr_class == "ENTER MANUALLY") {
+            $llr_class = $custom_llr_class;
+        }
+
+        $city = strtoupper(trim($_POST['city']));
+        $custom_city = strtoupper(trim($_POST['custom_city'] ?? ''));
+        if ($city == "ENTER MANUALLY") {
+            $city = $custom_city;
+        }
+
+        // Create unique submission identifier
+        $submission_hash = md5($client_id . $reg_num . $creation_on . $username);
+        
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['bmds_processed_submissions'][$submission_hash])) {
+            header("Location: client?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database
+        $check_duplicate = "SELECT id FROM bmds_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['bmds_processed_submissions'][$submission_hash] = true;
+            header("Location: client?success=1");
+            exit();
+        } else {
+            // Use regular query with duplicate prevention
+            $sql = "INSERT INTO bmds_entries (client_id, reg_num, policy_date, time, client_name, contact, policy_duration, start_date, end_date, car_type, ride, amount, remark, adv_amount, bal_amount, recov_amount, responsibility, address, username, fiscal_year, birth_date, form_status, creation_on, start_time, end_time, bmds_type, llr_type, mdl_type, class, llr_class, test_date, sr_num, city) 
+                    VALUES ('$client_id', '$reg_num', '$policy_date', '$time', '$client_name', '$contact', '$policy_duration', '$start_date', '$end_date', '$car_type', '$ride', '$amount', '$remark', '$adv_amount', '$bal_amount', '$recov_amount', '$responsibility', '$address', '$username', '$fiscalYear', '$birth_date', '$form_status', '$creation_on', '$start_time', '$end_time', '$bmds_type', '$llr_type', '$mdl_type', '$class', '$llr_class', '$test_date', '$sr_num', '$city')";
+            
+            if ($conn->query($sql) === TRUE) {
+                // Mark this submission as processed
+                $_SESSION['bmds_processed_submissions'][$submission_hash] = true;
+                
+                $last_id = $conn->insert_id;
+                $_SESSION['last_submission'] = $last_id;
+                $_SESSION['submission_time'] = time();
+                
+                header("Location: client?success=1&id=" . $last_id);
+                exit();
+            } else {
+                echo "Error: " . $conn->error;
+            }
+        }
+    }
+}
 }
 ?>
 

@@ -211,101 +211,117 @@ $period = $_POST['period'] ?? null;
     // exit;
 
     // If no errors, process the form
-    if (empty($errors)) {
-        if ($is_edit) {
+   if (empty($errors)) {
+    if ($is_edit) {
+        $expense_type = $_POST['expense_type'] === 'Enter Manually' ? $_POST['expenseCustomtype'] : $_POST['expense_type'];
+        $mv_num = $_POST['mv_num'] === 'Enter Manually' ? $_POST['mvcustom'] : $_POST['mv_num'];
+        $consumer_num = $_POST['consumer_num'] === 'Enter Manually' ? $_POST['consumer_custom'] : $_POST['consumer_num'];
+        $telephone_num = $_POST['telephone_num'] === 'Enter Manually' ? $_POST['telephone_custom'] : $_POST['telephone_num'];
+        $internet = $_POST['internet'] === 'Enter Manually' ? $_POST['internet_custom'] : $_POST['internet'];
+        $branch_name = $_POST['branch_name'] === 'Enter Manually' ? $_POST['branch_name_custom'] : $_POST['branch_name'];
+        $bank_name = $_POST['bank_name'] === 'Enter Manually' ? $_POST['bank_name_custom'] : $_POST['bank_name'];
 
+        // Update existing entry
+        $sql = "UPDATE expenses SET reg_num='$reg_num', policy_date='$policy_date',time='$time', amount='$amount', pay_mode='$pay_mode', cheque_no='$cheque_no', bank_name='$bank_name', cheque_dt='$cheque_dt', expense_type='$expense_type', ride_km='$ride_km', fuel='$fuel', details='$details', expenseCustomtype='$expenseCustomtype', mv_num='$mv_num', user_name='$user_name', liter='$liter', remark='$remark', person_name='$person_name', period='$period',vehicle_type='$vehicle_type',consumer_num='$consumer_num',telephone_num='$telephone_num',internet='$internet',milkat_num='$milkat_num',pro_description='$pro_description',pro_location='$pro_location',survey_no='$survey_no',branch_name = '$branch_name', expense_status = '$expense_status', end_date = '$end_date' WHERE id=$id";
+        if ($conn->query($sql) === TRUE) {
+            header("Location: expense.php");
+            exit();
+        } else {
+            echo "Error updating record: " . $conn->error;
+        }
+    }  
+    else {
+        // username for who fill form
+        $username = $_SESSION['username'];
 
-            $$expense_type = $_POST['$expense_type'] === 'Enter Manually' ? $_POST['expenseCustomtype'] : $_POST['$expense_type'];
-            $mv_num = $_POST['mv_num'] === 'Enter Manually' ? $_POST['mvcustom'] : $_POST['mv_num'];
-            $consumer_num = $_POST['consumer_num'] === 'Enter Manually' ? $_POST['consumer_custom'] : $_POST['consumer_num'];
-            $telephone_num = $_POST['telephone_num'] === 'Enter Manually' ? $_POST['telephone_custom'] : $_POST['telephone_num'];
-            $internet = $_POST['internet'] === 'Enter Manually' ? $_POST['internet_custom'] : $_POST['internet'];
-            $branch_name = $_POST['branch_name'] === 'Enter Manually' ? $_POST['branch_name_custom'] : $_POST['branch_name'];
-            $bank_name = $_POST['bank_name'] === 'Enter Manually' ? $_POST['bank_name_custom'] : $_POST['bank_name'];
-
-            // Update existing entry
-            $sql = "UPDATE expenses SET reg_num='$reg_num', policy_date='$policy_date',time='$time', amount='$amount', pay_mode='$pay_mode', cheque_no='$cheque_no', bank_name='$bank_name', cheque_dt='$cheque_dt', expense_type='$expense_type', ride_km='$ride_km', fuel='$fuel', details='$details', expenseCustomtype='$expenseCustomtype', mv_num='$mv_num', user_name='$user_name', liter='$liter', remark='$remark', person_name='$person_name', period='$period',vehicle_type='$vehicle_type',consumer_num='$consumer_num',telephone_num='$telephone_num',internet='$internet',milkat_num='$milkat_num',pro_description='$pro_description',pro_location='$pro_location',survey_no='$survey_no',branch_name = '$branch_name', expense_status = '$expense_status', end_date = '$end_date' WHERE id=$id";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: expense.php");
-                exit();
-            } else {
-                echo "Error updating record: " . $conn->error;
-            }
-        }  
-        else {
-            
-            // username for who fill form
-            $username = $_SESSION['username'];
-
-            $expense_type = strtoupper(trim($_POST['expense_type'] ?? ''));
-            $expenseCustomtype = strtoupper(trim($_POST['expenseCustomtype'] ?? ''));
-            if ($expense_type == "Enter Manually") {
-                $expense_type = strtoupper($expenseCustomtype);
-            }
-
-
-            // Capture data from the form
-            $mv_num = $_POST['mv_num'];
-            $mvcustom = $_POST['mvcustom'] ?? '';
-            
-            // If 'Enter Manually' is selected, use the custom type
-            if ($mv_num == "Enter Manually") {
-                $mv_num = $mvcustom;
-            }
-
-            // Capture data from the form
-            $consumer_num = $_POST['consumer_num'];
-            $consumer_custom = $_POST['consumer_custom'] ?? '';
-            
-            // If 'Enter Manually' is selected, use the custom type
-            if ($consumer_num == "Enter Manually") {
-                $consumer_num = $consumer_custom;
-            }
-             
-            // Capture data from the form
-            $telephone_num = $_POST['telephone_num'];
-            $telephone_custom = $_POST['telephone_custom'] ?? '';
-            
-            // If 'Enter Manually' is selected, use the custom type
-            if ($telephone_num == "Enter Manually") {
-                $telephone_num = $telephone_custom;
-            }
-             
-            // Capture data from the form
-            $internet = $_POST['internet'];
-            $internet_custom = $_POST['internet_custom'] ?? '';
-            
-            // If 'Enter Manually' is selected, use the custom type
-            if ($internet == "Enter Manually") {
-                $internet = $internet_custom;
-            }
-
-
-            
-            // SQL query using prepared statements
-            $stmt = $conn->prepare("INSERT INTO expenses (reg_num, policy_date, time, amount, pay_mode, cheque_no, bank_name, cheque_dt, expense_type, ride_km, fuel, details, username, creation_on, mv_num, user_name, liter, remark, person_name, period,vehicle_type,consumer_num,telephone_num,internet,milkat_num,pro_description,pro_location,survey_no,branch_name,consumer_number,expense_status,end_date,reference)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param("sssssssssssssssssssssssssssssssss", $reg_num, $policy_date, $time, $amount, $pay_mode, $cheque_no, $bank_name, $cheque_dt, $expense_type, $ride_km, $fuel, $details, $username, $creation_on, $mv_num, $user_name, $liter, $remark, $person_name, $period,$vehicle_type,$consumer_num,$telephone_num,$internet,$milkat_num,$pro_description,$pro_location,$survey_no,$branch_name,$consumer_number,$expense_status,$end_date,$reference);
-            
-            // Execute the statement once
-            if ($stmt->execute()) {
-                // Get inserted Expense ID
-                $expense_id = $stmt->insert_id;
+        // Create unique submission identifier FIRST
+        $submission_hash = md5($reg_num . $expense_type . $creation_on . $username);
         
-                // Insert a Reminder
-                $reminder_stmt = $conn->prepare("INSERT INTO expenses_reminders (expense_id, reminder_date) VALUES (?, ?)");
-                $reminder_stmt->bind_param("is", $expense_id, $end_date);
-                $reminder_stmt->execute();
+        // Check if this submission was already processed in current session
+        if (isset($_SESSION['expenses_processed_submissions'][$submission_hash])) {
+            header("Location: expense?success=1");
+            exit();
+        }
+
+        // Check for duplicate entry in database FIRST
+        $check_duplicate = "SELECT id FROM expenses WHERE reg_num = '$reg_num' AND expense_type = '$expense_type' AND creation_on = '$creation_on'";
+        $result = $conn->query($check_duplicate);
+
+        if ($result->num_rows > 0) {
+            // Mark as processed and redirect silently
+            $_SESSION['expenses_processed_submissions'][$submission_hash] = true;
+            header("Location: expense?success=1");
+            exit();
+        }
+
+        $expense_type = strtoupper(trim($_POST['expense_type'] ?? ''));
+        $expenseCustomtype = strtoupper(trim($_POST['expenseCustomtype'] ?? ''));
+        if ($expense_type == "Enter Manually") {
+            $expense_type = strtoupper($expenseCustomtype);
+        }
+
+        // Capture data from the form
+        $mv_num = $_POST['mv_num'];
+        $mvcustom = $_POST['mvcustom'] ?? '';
         
-                // Redirect after successful insertion
-                header("Location: expense");
-                exit();
-            } else {
-                echo "Error: " . $stmt->error;
-            }
+        // If 'Enter Manually' is selected, use the custom type
+        if ($mv_num == "Enter Manually") {
+            $mv_num = $mvcustom;
+        }
+
+        // Capture data from the form
+        $consumer_num = $_POST['consumer_num'];
+        $consumer_custom = $_POST['consumer_custom'] ?? '';
+        
+        // If 'Enter Manually' is selected, use the custom type
+        if ($consumer_num == "Enter Manually") {
+            $consumer_num = $consumer_custom;
+        }
+         
+        // Capture data from the form
+        $telephone_num = $_POST['telephone_num'];
+        $telephone_custom = $_POST['telephone_custom'] ?? '';
+        
+        // If 'Enter Manually' is selected, use the custom type
+        if ($telephone_num == "Enter Manually") {
+            $telephone_num = $telephone_custom;
+        }
+         
+        // Capture data from the form
+        $internet = $_POST['internet'];
+        $internet_custom = $_POST['internet_custom'] ?? '';
+        
+        // If 'Enter Manually' is selected, use the custom type
+        if ($internet == "Enter Manually") {
+            $internet = $internet_custom;
+        }
+
+        // SQL query using prepared statements
+        $stmt = $conn->prepare("INSERT INTO expenses (reg_num, policy_date, time, amount, pay_mode, cheque_no, bank_name, cheque_dt, expense_type, ride_km, fuel, details, username, creation_on, mv_num, user_name, liter, remark, person_name, period,vehicle_type,consumer_num,telephone_num,internet,milkat_num,pro_description,pro_location,survey_no,branch_name,consumer_number,expense_status,end_date,reference)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param("sssssssssssssssssssssssssssssssss", $reg_num, $policy_date, $time, $amount, $pay_mode, $cheque_no, $bank_name, $cheque_dt, $expense_type, $ride_km, $fuel, $details, $username, $creation_on, $mv_num, $user_name, $liter, $remark, $person_name, $period,$vehicle_type,$consumer_num,$telephone_num,$internet,$milkat_num,$pro_description,$pro_location,$survey_no,$branch_name,$consumer_number,$expense_status,$end_date,$reference);
+        
+        // Execute the statement once
+        if ($stmt->execute()) {
+            // Mark this submission as processed
+            $_SESSION['expenses_processed_submissions'][$submission_hash] = true;
+            
+            // Get inserted Expense ID
+            $expense_id = $stmt->insert_id;
+    
+            // Insert a Reminder
+            $reminder_stmt = $conn->prepare("INSERT INTO expenses_reminders (expense_id, reminder_date) VALUES (?, ?)");
+            $reminder_stmt->bind_param("is", $expense_id, $end_date);
+            $reminder_stmt->execute();
+    
+            // Redirect after successful insertion
+            header("Location: expense?success=1&id=" . $expense_id);
+            exit();
+        } else {
+            echo "Error: " . $stmt->error;
+        }
     }
-        
-    }
+}
     
 }
 ?>

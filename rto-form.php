@@ -227,10 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $creation_on = date('Y-m-d H:i:s'); // Get current date and time in Asia/Kolkata timezone
     $update_on = date('Y-m-d H:i:s'); // Get current date and time in Asia/Kolkata timezone
 
-// echo "<pre>";
-// print_r($_POST);
-// exit;
-
     // If no errors, process the form
     if (empty($errors)) {
         if ($is_edit) {
@@ -293,15 +289,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
 
+            // Check for duplicate entry before insertion
+            $check_duplicate = "SELECT id FROM rto_entries WHERE client_id = '$client_id' AND reg_num = '$reg_num' AND creation_on = '$creation_on'";
+            $result = $conn->query($check_duplicate);
 
-            $sql = "INSERT INTO rto_entries (client_id,reg_num, policy_date,time, client_name, contact, category, type_work, mv_no, amount,  inv_status, remark,adv_amount,gov_amount,other_amount,recov_amount,address,username,birth_date,form_status,creation_on,responsibility,adviser_name,dl_type_work,tr_type_work,nt_type_work,expenses,net_amt,vehicle_class) 
-                    VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$category', '$type_work', '$mv_no', '$amount' , '$inv_status', '$remark', '$adv_amount', '$gov_amount' ,'$other_amount','$recov_amount','$address','$username','$birth_date','$form_status','$creation_on','$responsibility','$adviser_name','$dl_type_work','$tr_type_work','$nt_type_work','$expenses','$net_amt','$vehicle_class')";
-            if ($conn->query($sql) === TRUE) {
-                header("Location: client");
+            if ($result->num_rows > 0) {
+                // Duplicate found - silent exit with redirect
+                header("Location: client?success=1");
                 exit();
             } else {
-                echo "Error: " . $conn->error;
+                // Proceed with insertion
+                $sql = "INSERT INTO rto_entries (client_id, reg_num, policy_date, time, client_name, contact, category, type_work, mv_no, amount, inv_status, remark, adv_amount, gov_amount, other_amount, recov_amount, address, username, birth_date, form_status, creation_on, responsibility, adviser_name, dl_type_work, tr_type_work, nt_type_work, expenses, net_amt, vehicle_class) 
+                        VALUES ('$client_id','$reg_num', '$policy_date','$time', '$client_name', '$contact', '$category', '$type_work', '$mv_no', '$amount' , '$inv_status', '$remark', '$adv_amount', '$gov_amount' ,'$other_amount','$recov_amount','$address','$username','$birth_date','$form_status','$creation_on','$responsibility','$adviser_name','$dl_type_work','$tr_type_work','$nt_type_work','$expenses','$net_amt','$vehicle_class')";
+                
+                if ($conn->query($sql) === TRUE) {
+                    // Get the last inserted ID
+                    $last_id = $conn->insert_id;
+                    
+                    // Store in session to prevent duplicates
+                    $_SESSION['last_submission'] = $last_id;
+                    $_SESSION['submission_time'] = time();
+                    
+                    header("Location: client?success=1&id=" . $last_id);
+                    exit();
+                } else {
+                    echo "Error: " . $conn->error;
+                }
             }
+
         }
         
     }
